@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "mcapibridge",
+  "version": "${version}",
+  "name": "MCAPIBridge",
+  "description": "A cross-platform API for most programming language",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/mcapibridge/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.taskchou.mcapibridge.client.McapibridgeDataGenerator"
+    ],
+    "client": [
+      "org.taskchou.mcapibridge.client.McapibridgeClient"
+    ],
+    "main": [
+      "org.taskchou.mcapibridge.Mcapibridge"
+    ]
+  },
+  "mixins": [
+    "mcapibridge.mixins.json",
+    {
+      "config": "mcapibridge.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

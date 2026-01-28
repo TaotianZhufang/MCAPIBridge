@@ -1,0 +1,29 @@
+# Gradle build
+.gradle/
+build/
+out/
+run/
+
+# IDE
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Fabric example mods
+fabric-example-mods/
+
+# Config
+config/
+
+# Jar
+*.jar
+
+# Py
+dist/

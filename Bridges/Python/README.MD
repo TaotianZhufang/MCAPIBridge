@@ -1,0 +1,248 @@
+# MCAPIBridge Python Libary
+
+MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some ways to connect Minecraft with this mod in Python.
+
+## QuickStart
+
+### Install
+Ensure your mod loaded.
+
+Use pip to install this.
+```
+pip install mcapibridge
+```
+This is a simple example to connect.
+```
+from mc import Minecraft
+import time
+
+# Default ip is localhost and port is 4711
+# You can use mc = Minecraft(host=YOURIP,port=YOURPORT) to change
+mc = Minecraft()
+
+# Show a message
+mc.postToChat("§aHello, Minecraft! Python is here.")
+```
+
+---
+
+## Usage
+
+### Basic
+
+#### `postToChat(msg)`
+Send a message to chat screen.
+*   **msg**: String message.Support `§` .You can check it on Minecraft wiki.
+
+#### `runCommand(cmd)`
+Run commands as Server.
+*   **cmd**: Srting command without '/'
+
+Ex: `mc.runCommand("time set day")`
+
+---
+
+### World
+
+#### `setBlock(x, y, z, block_id, dimension=None)`
+Set a block at the point given.
+*   **x, y, z**: Int positions.
+*   **block_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"stone"`, `"diamond_block"`.Support other namespaces.
+*	**dimension**: Optional String target dimension/player name.
+
+#### `getBlock(x, y, z, dimension=None)`
+Gets the block ID at the specified coordinates.
+*   **x, y, z**: Int positions.
+*   **dimension**: Optional String target dimension/player name.
+*   **return**: String block ID.Ex.`"minecraft:grass_block"`.
+
+#### `spawnEntity(x, y, z, entity_id, yaw=0.0, pitch=0.0, dimension=None)`
+Spawn an entity at the point given.
+*   **entity_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"zombie"`, `"pig"`, `"lightning_bolt"`.Support other namespaces.
+*   **yaw**: Optional Int degree.Horizontal degree.
+*   **pitch**: Optional Int degree.Vertical degree.
+*   **dimension**: Optional String target dimension/player name.
+
+#### `setEntityVelocity(entity_id, vx, vy, vz)`
+Sets the velocity of an entity.
+*   **entity_id**: Int ID.
+*   **vx, vy, vz**: Double velocity components.
+
+#### `setEntityNoGravity(entity_id, enable=True)`
+Enables or disables gravity for an entity.
+*   **entity_id**: Int ID.
+
+#### `getEntities(x, y, z, radius=10, dimension=None)`
+Gets the block ID at the specified coordinates.
+*   **x, y, z**: Double positions.
+*   **radius**: Double search radius.
+*   **dimension**: Optional String target dimension/player name.
+*   **return**: List of Dicts: [{'id': 123, 'type': 'minecraft:zombie', 'pos': Vec3}, ...]
+
+#### `spawnParticle(x, y, z, particle_id, count=10, dx=0.0, dy=0.0, dz=0.0, speed=0.0, dimension=None)`
+Spawn particle at the point given.
+*   **particle_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"flame"`, `"heart"`.Support other namespaces.
+*   **count**: Int count.
+*   **dx, dy, dz**: Optional double diffusion ranges.(when count=0, it represents the direction vector)
+*   **speed**: Optional double speed.
+*   **dimension**: Optional String target dimension/player name.
+
+#### `setSign(x, y, z, line1="", line2="", line3="", line4="", dimension=None)`
+Sets the text on a sign block.
+*   **x, y, z**: Int positions.
+*   **line1-4**: String text for each line.
+*   **dimension**: Optional String target dimension/player name.
+
+**The block at the position must already be a sign.**
+
+---
+
+### Info
+
+#### `getOnlinePlayers()`
+Get players' name online.
+*   **return**: Dict:  `[{'name': 'Steve', 'id': 123}, ...]`。
+
+#### `getPlayerPos(target="")`
+Get player's position and yaw and pitch.
+*   **target**: String player name.
+*   **return**: Int x,y,z and Double yaw,pitch.
+
+#### `getPlayerEntityId(name)`
+Get player's ID.
+*   **name**: String player name.
+*   **return**: Int ID.
+
+#### `getPlayerName(entity_id)`
+Get player's ID.
+*   **entity_id**: Int ID.
+*   **return**: String player name.
+
+#### `getPlayerDetails(target="")`
+Get player's details.
+*   **target**: String player name.
+*   **return**: Dict including
+    *   `name`: String player name
+    *   `id`: Int ID
+    *   `mode`: String gamemode
+    *   `health`: Double health
+    *   `max_health`: Double max health
+    *   `food`: Int food
+    *   `held_item`: String item held
+    *   `held_count`: Int item held count
+
+---
+
+### State
+
+#### `setHealth(target, amount)`
+Set player's health.
+*   **target**: String player name.
+*   **amount**: Double health.
+
+#### `setFood(target, amount)`
+Set player's food.
+*   **target**: String player name.
+*   **amount**: Int food(0-20).
+
+#### `giveEffect(target, effect_name, duration_sec=30, amplifier=1)`
+Effect player.
+*   **effect_name**: String effect ID.Ex:`"speed"`,`"night_vision"`.
+*   **duration_sec**: Int seconds.
+*   **amplifier**: Int amplifier.
+
+#### `setFlying(target, allow_flight=True, is_flying=True)`
+Enable player to fly in survival mode.
+*   **target**: String player name.
+
+#### `setFlySpeed(target, speed=0.05)`
+Set flight speed.
+*   **target**: String player name.
+*   **speed**: Double speed.Default 0.05.
+
+#### `setWalkSpeed(target, speed=0.1)`
+Set walk speed.
+*   **target**: String player name.
+*   **speed**: Double speed.Default 0.1.
+
+#### `setGodMode(target, enable=True)`
+Enable invulnerability.
+*   **target**: String player name.
+
+---
+
+### Inventory
+
+#### `getInventory(target="")`
+Get player's inventory.
+*   **return**: List of Dicts.Every dict has `{'slot': block_ID, 'id': item_ID, 'count': item_count}`.
+
+#### `give(target, item_id, count=1)`
+Give player item.
+*   **item_id**: String item ID.
+*   **count**: Int count.
+
+#### `clearInventory(target, item_id="")`
+Clear inventory.
+*   **target**: String player name.
+*   **item_id**: String item ID.
+
+---
+
+### TP
+
+#### `teleport(x, y, z, target="")`
+TP player.
+*   **x, y, z**: Int target x,y,z.
+*   **target**: String player ID.
+
+#### `teleportEntity(entity_id, x, y, z)`
+TP entitie.
+*   **entity_id**: Int entity id.
+
+---
+
+### Events
+
+#### `pollBlockHits()`
+Get click events.
+*   **return**: List Class `[BlockHit1,BlockHit2,.....]`
+    * **pos**: Class Vec3
+		* Double x
+		* Double y
+		* Double z
+	* **face**: Int click face.
+	* **entityId**: Int ID of clicking on entity.
+	* **action**: Int action type:1--left click,2--right click.(Left click event is only affected by player clicking where which can reach)
+	* **type**: String action:"LEFT_CLICK" or "RIGHT_CLICK"
+
+#### `pollChatPosts()`
+Get player message events.
+*   **return**: List Class `[ChatPost1,ChatPost2,.....]`
+	* **name**: String player name.
+	* **message**: String message.
+
+---
+
+### Helper Methods
+
+#### `getDirectionVector(target="")`
+Calculates the direction vector based on a player's rotation. Useful for shooting projectiles.
+*   **target**: String player ID.
+*   **return**: Class `Vec3` normalized direction vector.
+
+---
+
+### Helper Classes
+
+#### `Vec3`
+Represents a 3D vector/coordinate.
+*   **properties**: `x`,`y`,`z`.
+*   **Methods**:
+    *   **length()**: Returns vector length.
+
+#### `PlayerPos`
+**Inherits Vec3.**Represents player position with rotation.
+*   **properties**: `x`,`y`,`z`,`yaw`,`pitch`.
+*   **Methods**:
+    *   **forward(distance=1.0)**: Returns a new `Vec3` position at `distance` blocks ahead of the player's view.
