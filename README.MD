@@ -22,4 +22,4 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 ## Bridges
 #### [Python Libary](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/README.MD)
 
-*More languages will be support future*
+*More languages will be supported future*
