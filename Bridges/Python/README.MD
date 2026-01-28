@@ -101,7 +101,7 @@ Sets the text on a sign block.
 
 #### `getOnlinePlayers()`
 Get players' name online.
-*   **return**: Dict:  `[{'name': 'Steve', 'id': 123}, ...]`。
+*   **return**: Dict:  `[{'name': 'Steve', 'id': 123}, ...]`.
 
 #### `getPlayerPos(target="")`
 Get player's position and yaw and pitch.
