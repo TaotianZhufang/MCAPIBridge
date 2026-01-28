@@ -242,7 +242,7 @@ Represents a 3D vector/coordinate.
     *   **length()**: Returns vector length.
 
 #### `PlayerPos`
-**Inherits Vec3.**Represents player position with rotation.
+**Inherits Vec3** Represents player position with rotation.
 *   **properties**: `x`,`y`,`z`,`yaw`,`pitch`.
 *   **Methods**:
     *   **forward(distance=1.0)**: Returns a new `Vec3` position at `distance` blocks ahead of the player's view.
