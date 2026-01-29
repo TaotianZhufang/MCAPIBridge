@@ -12,6 +12,9 @@
 *  **Mod Loader**: Fabric Loader
 *  **Dependencies**: Fabric API
 
+## Install
+#### [Modrinth](https://modrinth.com/mod/mcapibridge)
+
 ## Security Warning
 
 This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions** to any program that connects to it.
