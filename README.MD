@@ -68,7 +68,11 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 *More languages will be supported future*
 
 ## Update
-#### 1/31/2026 Alpha-0.2
+#### 1/31/2026 Alpha-0.2.1
+
+**Bug Fixed**: Single hit or chat event can't be handled by above two scripts.
+
+#### 1/31/2026 Alpha-0.2.0
 
 *   **Client-Side Input**: Now detects Left/Right clicks even when aiming at the air (using client packets).
 *   **Macro Keys**: Added 5 customizable keys in the game settings that scripts can listen to for triggering custom actions.

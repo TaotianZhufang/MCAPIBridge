@@ -56,13 +56,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.nio.charset.StandardCharsets;
 import java.io.OutputStreamWriter;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Mcapibridge implements ModInitializer {
 
-    public static final Queue<String> eventQueue = new ConcurrentLinkedQueue<>();
-    public static final Queue<String> chatQueue = new ConcurrentLinkedQueue<>();
     public static final Identifier CLICK_PACKET_ID = new Identifier("mcapibridge", "click_event");
     private static BridgeSocketServer serverThread;
+    public static final List<BridgeClientHandler> activeClients = new CopyOnWriteArrayList<>();
+
 
     public record ClickPayload(int action) implements CustomPayload {
         public static final CustomPayload.Id<ClickPayload> ID = new CustomPayload.Id<>(CLICK_PACKET_ID);
@@ -80,16 +81,28 @@ public class Mcapibridge implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(ClickPayload.ID, ClickPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(ClickPayload.ID, (payload, context) -> {
-            System.out.println("DEBUG: Server received packet!");
             context.server().execute(() -> {
-
                 ServerPlayerEntity player = context.player();
                 HitResult hit = longDistanceRaycast(player.getServerWorld(), player, 500.0);
                 BlockPos pos = ((BlockHitResult) hit).getBlockPos();
 
-                eventQueue.add(String.format("%d,%d,%d,%d,%d,%d",
-                        pos.getX(), pos.getY(), pos.getZ(), 0, player.getId(), payload.action()));
+                String eventData = String.format("%d,%d,%d,%d,%d,%d",
+                        pos.getX(), pos.getY(), pos.getZ(), 0, player.getId(), payload.action());
+
+                for (BridgeClientHandler client : activeClients) {
+                    client.eventQueue.add(eventData);
+                }
             });
+        });
+
+        ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+            String name = sender.getName().getString();
+            String content = message.getContent().getString();
+            String chatData = name + "," + content.replace("|", "");
+
+            for (BridgeClientHandler client : activeClients) {
+                client.chatQueue.add(chatData);
+            }
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -146,12 +159,6 @@ public class Mcapibridge implements ModInitializer {
         //Server Events
         */
 
-        ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-            String name = sender.getName().getString();
-            String content = message.getContent().getString();
-
-            chatQueue.add(name + "," + content.replace("|", ""));
-        });
 
     }
 
@@ -172,6 +179,7 @@ public class Mcapibridge implements ModInitializer {
         private final MinecraftServer mcServer;
         private ServerSocket serverSocket;
         private boolean running = true;
+        public static final List<BridgeClientHandler> activeHandlers = new CopyOnWriteArrayList<>();
         public BridgeSocketServer(MinecraftServer mcServer) { this.mcServer = mcServer; }
         @Override
         public void run() {
@@ -179,7 +187,9 @@ public class Mcapibridge implements ModInitializer {
                 serverSocket = new ServerSocket(4711);
                 while (running) {
                     Socket clientSocket = serverSocket.accept();
-                    new BridgeClientHandler(clientSocket, mcServer).start();
+                    BridgeClientHandler handler = new BridgeClientHandler(clientSocket, mcServer);
+                    Mcapibridge.activeClients.add(handler);
+                    handler.start();
                 }
             } catch (Exception e) {}
         }
@@ -190,11 +200,12 @@ public class Mcapibridge implements ModInitializer {
         private final Socket socket;
         private final MinecraftServer mcServer;
         public BridgeClientHandler(Socket socket, MinecraftServer mcServer) { this.socket = socket; this.mcServer = mcServer; }
+        public final Queue<String> eventQueue = new ConcurrentLinkedQueue<>();
+        public final Queue<String> chatQueue = new ConcurrentLinkedQueue<>();
 
-        @Override
         public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
-                 PrintWriter out = new PrintWriter(new java.io.OutputStreamWriter(socket.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8), true)) {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                 PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
 
                 String line;
                 while ((line = in.readLine()) != null) {
@@ -202,12 +213,13 @@ public class Mcapibridge implements ModInitializer {
                         String res = handleCommand(line.trim());
                         if (res != null) out.println(res);
                     } catch (Exception e) {
-                        System.err.println("Error:" + e.getMessage());
                         out.println("Error: Processing failed");
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Lost connection");
+                // System.out.println("Lost connection");
+            } finally {
+                Mcapibridge.activeClients.remove(this);
             }
         }
 
@@ -419,8 +431,18 @@ public class Mcapibridge implements ModInitializer {
         }
         private String getHits() {
             StringBuilder sb = new StringBuilder();
-            String hit;
-            while((hit=Mcapibridge.eventQueue.poll())!=null){ if(sb.length()>0)sb.append("|"); sb.append(hit); }
+            String h;
+            while((h=this.eventQueue.poll())!=null){if(sb.length()>0)sb.append("|");sb.append(h);}
+            return sb.toString();
+        }
+
+        private String getChatPosts() {
+            StringBuilder sb = new StringBuilder();
+            String chat;
+            while ((chat = this.chatQueue.poll()) != null) {
+                if (sb.length() > 0) sb.append("|");
+                sb.append(chat);
+            }
             return sb.toString();
         }
         private ServerPlayerEntity findPlayer(String idOrName) {
@@ -672,15 +694,6 @@ public class Mcapibridge implements ModInitializer {
             return null;
         }
 
-        private String getChatPosts() {
-            StringBuilder sb = new StringBuilder();
-            String chat;
-            while ((chat = Mcapibridge.chatQueue.poll()) != null) {
-                if (sb.length() > 0) sb.append("|");
-                sb.append(chat);
-            }
-            return sb.toString();
-        }
 
         private String setFlying(String[] args) {
             String target = args[0];
