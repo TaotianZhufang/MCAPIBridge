@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -14,6 +16,9 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.registry.Registries;
@@ -35,6 +40,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.network.PacketByteBuf;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -53,10 +61,36 @@ public class Mcapibridge implements ModInitializer {
 
     public static final Queue<String> eventQueue = new ConcurrentLinkedQueue<>();
     public static final Queue<String> chatQueue = new ConcurrentLinkedQueue<>();
+    public static final Identifier CLICK_PACKET_ID = new Identifier("mcapibridge", "click_event");
     private static BridgeSocketServer serverThread;
+
+    public record ClickPayload(int action) implements CustomPayload {
+        public static final CustomPayload.Id<ClickPayload> ID = new CustomPayload.Id<>(CLICK_PACKET_ID);
+        public static final PacketCodec<RegistryByteBuf, ClickPayload> CODEC = PacketCodec.tuple(
+                net.minecraft.network.codec.PacketCodecs.INTEGER, ClickPayload::action,
+                ClickPayload::new
+        );
+        @Override
+        public Id<? extends CustomPayload> getId() { return ID; }
+    }
 
     @Override
     public void onInitialize() {
+
+        PayloadTypeRegistry.playC2S().register(ClickPayload.ID, ClickPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(ClickPayload.ID, (payload, context) -> {
+            System.out.println("DEBUG: Server received packet!");
+            context.server().execute(() -> {
+
+                ServerPlayerEntity player = context.player();
+                HitResult hit = longDistanceRaycast(player.getServerWorld(), player, 500.0);
+                BlockPos pos = ((BlockHitResult) hit).getBlockPos();
+
+                eventQueue.add(String.format("%d,%d,%d,%d,%d,%d",
+                        pos.getX(), pos.getY(), pos.getZ(), 0, player.getId(), payload.action()));
+            });
+        });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             serverThread = new BridgeSocketServer(server);
@@ -67,6 +101,19 @@ public class Mcapibridge implements ModInitializer {
             if (serverThread != null) serverThread.stopServer();
         });
 
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayerEntity player = handler.getPlayer();
+
+            player.sendMessage(Text.of("§e========================================"));
+            player.sendMessage(Text.of("§bWelcome to MCAPIBridge !"));
+            //player.sendMessage(Text.of("§7Your ID : §a" + player.getId()));
+            player.sendMessage(Text.of("Use bridges(like Python) to control"));
+            player.sendMessage(Text.of("§aConnect to the server IP at the port 4711"));
+            player.sendMessage(Text.of("§e========================================"));
+
+            // eventQueue.add("PLAYER_JOIN," + player.getName().getString() + "," + player.getId());
+        });
+/*
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (world instanceof ServerWorld) {
                 // Action 1 = Left Click
@@ -96,14 +143,16 @@ public class Mcapibridge implements ModInitializer {
             ItemStack stack = player.getStackInHand(hand);
             return TypedActionResult.pass(stack);
         });
+        //Server Events
+        */
 
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             String name = sender.getName().getString();
             String content = message.getContent().getString();
 
-            // Steve,Hello World
             chatQueue.add(name + "," + content.replace("|", ""));
         });
+
     }
 
     private static HitResult longDistanceRaycast(World world, ServerPlayerEntity player, double maxDistance) {

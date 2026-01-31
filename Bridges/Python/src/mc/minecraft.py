@@ -41,8 +41,10 @@ class BlockHit:
         self.pos = Vec3(x, y, z)
         self.face = face
         self.entityId = entityId
-        self.action = action # 1=Left,2=Right
-        self.type = "RIGHT_CLICK" if action == 2 else "LEFT_CLICK"
+        self.action = action # 1=Left,2=Right,101-105:Keyboard Action
+        if action == 1: self.type = "LEFT_CLICK"
+        elif action == 2: self.type = "RIGHT_CLICK"
+        elif action > 100: self.type = f"KEY_MACRO_{action - 100}"
 
 class Minecraft:
     def __init__(self, host="localhost", port=4711):

@@ -1,0 +1,9 @@
+LICENSE
+README.MD
+pyproject.toml
+src/mc/__init__.py
+src/mc/minecraft.py
+src/mcapibridge.egg-info/PKG-INFO
+src/mcapibridge.egg-info/SOURCES.txt
+src/mcapibridge.egg-info/dependency_links.txt
+src/mcapibridge.egg-info/top_level.txt
