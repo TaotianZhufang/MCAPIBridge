@@ -75,7 +75,7 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 *More languages will be supported future*
 
 ## Update
-#### 2/1/2026 Alpha-0.2.2~~~~
+#### 2/1/2026 Alpha-0.2.2
 *   **Deep Data Control**: Added **NBT modification** support for entities and blocks, allowing advanced customization like giant mobs or custom loot.
 *   **Camera Control**: Implemented `lookAt` API to force players or entities to look at specific coordinates.
 
