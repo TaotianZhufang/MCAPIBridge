@@ -26,6 +26,7 @@
     *   **Gravity**: Toggle gravity on/off for specific entities (e.g., creating laser-straight arrows).
 *   **Entity Radar**: Scan and retrieve a list of all entities within a specified radius.
 *   **Particle System**: Generate visual effects with custom count, speed, and diffusion volume.
+*   **Forced Look**: Control where a player or entity is looking with lookAt, perfect for cinematics or horror mechanics.
 
 ### 👤 Player Management
 *   **Stats Control**: Read and modify **Health** (can break vanilla limits), **Food Level**, and **Game Mode**.
@@ -43,6 +44,10 @@
     *   **Left Click**: Detects interactions and attacks.
 *   **Chat Listener**: Streams in-game chat messages to the external script in real-time.
 *   **Macro Keys**: Registers **5 Custom Macro Keys** in the game's controls menu. Scripts can listen for these specific key presses to trigger custom logic.
+
+### 📦 Deep Data Access (NBT)
+*   **NBT Modification**: Directly write raw NBT data to **Entities** and **Block Entities**.
+*   **Advanced Customization**: Create giants, freeze mobs (`NoAI`), make entities glow, or fill chests with custom loot using JSON-like NBT strings.
 
 ---
 

@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -16,6 +18,8 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
@@ -26,6 +30,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -259,6 +264,9 @@ public class Mcapibridge implements ModInitializer {
                     case "world.getBlock": return getBlock(args);
                     case "world.getEntities": return getEntities(args);
                     case "world.setSign": return setSignText(args);
+                    case "player.lookAt": return lookAt(args);
+                    case "entity.setNbt": return setEntityNbt(args);
+                    case "block.setNbt": return setBlockNbt(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
@@ -419,7 +427,8 @@ public class Mcapibridge implements ModInitializer {
             final String command = String.join(",", args);
             mcServer.execute(() -> {
                 try {
-                    mcServer.getCommandManager().getDispatcher().execute(command, mcServer.getCommandSource());
+                    ServerCommandSource silentSource = mcServer.getCommandSource().withSilent();
+                    mcServer.getCommandManager().getDispatcher().execute(command, silentSource);
                 } catch (Exception e) {}
             });
             return null;
@@ -876,6 +885,87 @@ public class Mcapibridge implements ModInitializer {
                 }
             });
             return null;
+        }
+
+        private String lookAt(String[] args) {
+            String target = args[0];
+            double x = Double.parseDouble(args[1]);
+            double y = Double.parseDouble(args[2]);
+            double z = Double.parseDouble(args[3]);
+
+            mcServer.execute(() -> {
+                ServerPlayerEntity p = findPlayer(target);
+                if (p != null) {
+                    p.lookAt(EntityAnchorArgumentType.EntityAnchor.EYES, new Vec3d(x, y, z));
+                }
+            });
+            return null;
+        }
+
+        private String setEntityNbt(String[] args) {
+            int id = Integer.parseInt(args[0]);
+
+            String nbtRaw = reconstructArgs(args, 1);
+
+            mcServer.execute(() -> {
+                Entity entity = null;
+                for (ServerWorld w : mcServer.getWorlds()) {
+                    entity = w.getEntityById(id);
+                    if (entity != null) break;
+                }
+
+                if (entity != null) {
+                    try {
+                        NbtCompound newNbt = StringNbtReader.parse(nbtRaw);
+
+                        NbtCompound currentNbt = entity.writeNbt(new NbtCompound());
+
+                        currentNbt.copyFrom(newNbt);
+
+                        entity.readNbt(currentNbt);
+
+                        if (entity instanceof ServerPlayerEntity) {
+                        } else {
+                        }
+                    } catch (Exception e) {
+                        System.out.println("NBT Error: " + e.getMessage());
+                    }
+                }
+            });
+            return null;
+        }
+
+        private String setBlockNbt(String[] args) {
+            int x=Integer.parseInt(args[0]), y=Integer.parseInt(args[1]), z=Integer.parseInt(args[2]);
+            final String[] fA = args;
+            mcServer.execute(() -> {
+                try {
+                    ServerWorld world = mcServer.getOverworld();
+                    String nbtRaw = "";
+                    String lastArg = args[args.length-1].trim();
+                    boolean hasDim = !lastArg.endsWith("}") && !lastArg.endsWith("]");
+                    if (hasDim) {
+                        world = resolveWorld(args, args.length-1);
+                        StringBuilder sb = new StringBuilder();
+                        for(int i=3;i<args.length-1;i++) sb.append(args[i]).append(i<args.length-2?",":"");
+                        nbtRaw = sb.toString();
+                    } else {
+                        if(!mcServer.getPlayerManager().getPlayerList().isEmpty()) world=mcServer.getPlayerManager().getPlayerList().get(0).getServerWorld();
+                        nbtRaw = reconstructArgs(args, 3);
+                    }
+                    ServerCommandSource source = mcServer.getCommandSource().withWorld(world).withSilent().withLevel(2);
+                    mcServer.getCommandManager().getDispatcher().execute(String.format("data merge block %d %d %d %s",x,y,z,nbtRaw), source);
+                } catch(Exception e){}
+            }); return null;
+        }
+
+        private String reconstructArgs(String[] args, int startIndex) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = startIndex; i < args.length; i++) {
+                sb.append(args[i]);
+                if (i < args.length - 1) sb.append(",");
+            }
+            return sb.toString();
         }
     }
 }

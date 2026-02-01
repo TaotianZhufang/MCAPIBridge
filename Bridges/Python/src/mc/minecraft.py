@@ -41,7 +41,7 @@ class BlockHit:
         self.pos = Vec3(x, y, z)
         self.face = face
         self.entityId = entityId
-        self.action = action # 1=Left,2=Right,101-105:Keyboard Action
+        self.action = action # 1=Left,2=Right, 101-105:Keyboard Action
         if action == 1: self.type = "LEFT_CLICK"
         elif action == 2: self.type = "RIGHT_CLICK"
         elif action > 100: self.type = f"KEY_MACRO_{action - 100}"
@@ -340,5 +340,16 @@ class Minecraft:
         l4 = line4.replace(",", "，")
         
         cmd = f"world.setSign({int(x)},{int(y)},{int(z)},{l1},{l2},{l3},{l4})"
+        if dimension: cmd += f",{dimension}"
+        self._send(cmd)
+
+    def lookAt(self, target, x, y, z):
+        self._send(f"player.lookAt({target},{x},{y},{z})")
+        
+    def setEntityNbt(self, entity_id, nbt_string):
+        self._send(f"entity.setNbt({entity_id},{nbt_string})")
+
+    def setBlockNbt(self, x, y, z, nbt_string, dimension=None):
+        cmd = f"block.setNbt({int(x)},{int(y)},{int(z)},{nbt_string})"
         if dimension: cmd += f",{dimension}"
         self._send(cmd)

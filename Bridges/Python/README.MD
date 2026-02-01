@@ -95,6 +95,24 @@ Sets the text on a sign block.
 
 **The block at the position must already be a sign.**
 
+#### `lookAt(target, x, y, z)`
+Forces a player or entity to look at a specific coordinate.
+*   **target**: String player name or Entity ID.
+*   **x, y, z**: The coordinate to look at.
+*   *Example*: `mc.lookAt("Steve", 0, 100, 0)` forces Steve to look up.
+
+#### `setEntityNbt(entity_id, nbt_string)`
+Modifies the NBT data of an entity directly using JSON format.
+*   **entity_id**: Integer Entity ID.
+*   **nbt_string**: Valid SNBT string (e.g., `"{NoAI:1b, Glowing:1b}"`).
+*   *Note*: Useful for setting attributes like Scale in 1.20.6 (`{Attributes:[{Name:"generic.scale",Base:2.0d}]}`).
+
+#### `setBlockNbt(x, y, z, nbt_string, dimension=None)`
+Modifies the NBT data of a block entity (Tile Entity).
+*   **x, y, z**: Integer coordinates.
+*   **nbt_string**: Valid SNBT string.
+
+
 ---
 
 ### Info
