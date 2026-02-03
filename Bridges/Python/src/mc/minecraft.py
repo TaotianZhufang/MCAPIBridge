@@ -452,20 +452,4 @@ class Minecraft:
         cmd = f"block.setNbt({int(x)},{int(y)},{int(z)},{nbt_string})"
         if dimension: cmd += f",{dimension}"
         self._send(cmd)
-    
-    def drawHandMap(self, pixels, target=None):
-        """
-        绘制指定玩家手中的地图
-       """
-        CHUNK_SIZE = 1024
-        for i in range(0, len(pixels), CHUNK_SIZE):
-            chunk = pixels[i : i + CHUNK_SIZE]
-            data_str = ",".join(map(str, chunk))
-        
-            cmd = f"map.drawHand({i},{data_str})"
-            if target:
-               cmd += f",{target}"
-        
-            self._send(cmd)
-            time.sleep(0.01)
 

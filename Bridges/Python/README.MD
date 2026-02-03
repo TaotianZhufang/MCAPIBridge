@@ -7,7 +7,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest libary.Now version is 0.2.0.**
+**Please ensure you are using the latest libary.Now version is 0.2.1.**
 
 Use pip to install this.
 ```

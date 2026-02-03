@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: mcapibridge
-Version: 0.2.0
+Version: 0.2.1
 Summary: Python libary for MCAPIBridge
 Author: TaotianZhufang
 License: MIT License
@@ -38,6 +38,8 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 
 ### Install
 Ensure your mod loaded.
+
+**Please ensure you are using the latest libary.Now version is 0.2.1.**
 
 Use pip to install this.
 ```
