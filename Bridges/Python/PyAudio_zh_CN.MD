@@ -1,4 +1,4 @@
-# MCAPIBridge 音频系统完整文档
+# MCAPIBridge 音频系统文档
 
 #### [English](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio.MD)|简体中文
 
