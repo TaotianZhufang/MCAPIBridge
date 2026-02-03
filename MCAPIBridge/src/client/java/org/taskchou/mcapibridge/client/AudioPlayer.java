@@ -2,6 +2,8 @@ package org.taskchou.mcapibridge.client;
 
 import org.lwjgl.openal.AL10;
 import org.lwjgl.BufferUtils;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.math.MathHelper;
 
 import java.io.ByteArrayOutputStream;
@@ -13,8 +15,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class AudioPlayer {
 
     private static final ConcurrentHashMap<String, AudioSource> sources = new ConcurrentHashMap<>();
-
     private static final ConcurrentHashMap<String, LoadingBuffer> loadingBuffers = new ConcurrentHashMap<>();
+
+    private static MinecraftClient clientInstance = null;
 
     private static class LoadingBuffer {
         int sampleRate;
@@ -27,6 +30,7 @@ public class AudioPlayer {
         public int sampleRate;
         public boolean playing = false;
         public boolean streaming = false;
+        public float baseVolume = 1.0f;
 
         public AudioSource(int sampleRate) {
             this.sourceId = AL10.alGenSources();
@@ -54,6 +58,23 @@ public class AudioPlayer {
         }
     }
 
+    public static void setClient(MinecraftClient client) {
+        clientInstance = client;
+    }
+
+    private static float getVolumeMultiplier() {
+        try {
+            if (clientInstance != null && clientInstance.options != null) {
+                double master = clientInstance.options.getSoundVolumeOption(SoundCategory.MASTER).getValue();
+                float custom = ModConfig.get().customAudioVolume;
+                return (float) master * custom;
+            }
+        } catch (Exception e) {
+        }
+
+        return ModConfig.get().customAudioVolume;
+    }
+
     public static void loadStart(String id, byte[] pcmData, int sampleRate) {
         if (sources.containsKey(id)) {
             sources.get(id).cleanup();
@@ -69,8 +90,6 @@ public class AudioPlayer {
             e.printStackTrace();
         }
         loadingBuffers.put(id, buffer);
-
-        System.out.println("[Audio] Load start: " + id + ", chunk: " + pcmData.length + " bytes");
     }
 
     public static void loadContinue(String id, byte[] pcmData) {
@@ -81,7 +100,6 @@ public class AudioPlayer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            System.out.println("[Audio] Load continue: " + id + ", chunk: " + pcmData.length + " bytes");
         }
     }
 
@@ -106,10 +124,7 @@ public class AudioPlayer {
             finalSampleRate = sampleRate;
         }
 
-        if (fullData.length == 0) {
-            System.out.println("[Audio] Warning: empty audio data for " + id);
-            return;
-        }
+        if (fullData.length == 0) return;
 
         AudioSource source = new AudioSource(finalSampleRate);
 
@@ -122,7 +137,6 @@ public class AudioPlayer {
         source.bufferQueue.add(bufferId);
 
         sources.put(id, source);
-        System.out.println("[Audio] Load complete: " + id + ", total: " + fullData.length + " bytes");
     }
 
     public static void loadAudio(String id, byte[] pcmData, int sampleRate) {
@@ -142,7 +156,6 @@ public class AudioPlayer {
         source.bufferQueue.add(bufferId);
 
         sources.put(id, source);
-        System.out.println("[Audio] Loaded: " + id + ", size: " + pcmData.length + " bytes");
     }
 
     public static void streamAudio(String id, byte[] pcmData, int sampleRate) {
@@ -169,29 +182,27 @@ public class AudioPlayer {
 
     public static void play(String id, float volume, boolean loop) {
         AudioSource source = sources.get(id);
-        if (source == null) {
-            System.out.println("[Audio] Source not found: " + id);
-            return;
-        }
+        if (source == null) return;
+
+        source.baseVolume = volume;
+        float finalVolume = volume * getVolumeMultiplier();
 
         AL10.alSourcei(source.sourceId, AL10.AL_SOURCE_RELATIVE, AL10.AL_TRUE);
         AL10.alSource3f(source.sourceId, AL10.AL_POSITION, 0, 0, 0);
-        AL10.alSourcef(source.sourceId, AL10.AL_GAIN, volume);
+        AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
         AL10.alSourcei(source.sourceId, AL10.AL_LOOPING, loop && !source.streaming ? AL10.AL_TRUE : AL10.AL_FALSE);
         AL10.alSourcePlay(source.sourceId);
         source.playing = true;
-
-        System.out.println("[Audio] Playing: " + id);
     }
 
     public static void play3d(String id, float x, float y, float z, float volume, float rolloff, boolean loop) {
         AudioSource source = sources.get(id);
-        if (source == null) {
-            System.out.println("[Audio] Source not found: " + id);
-            return;
-        }
+        if (source == null) return;
 
-        AL10.alSourcef(source.sourceId, AL10.AL_GAIN, volume);
+        source.baseVolume = volume;
+        float finalVolume = volume * getVolumeMultiplier();
+
+        AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
         AL10.alSourcei(source.sourceId, AL10.AL_SOURCE_RELATIVE, AL10.AL_FALSE);
         AL10.alSource3f(source.sourceId, AL10.AL_POSITION, x, y, z);
         AL10.alSourcef(source.sourceId, AL10.AL_ROLLOFF_FACTOR, rolloff);
@@ -201,8 +212,6 @@ public class AudioPlayer {
 
         AL10.alSourcePlay(source.sourceId);
         source.playing = true;
-
-        System.out.println("[Audio] Playing 3D: " + id + " at (" + x + ", " + y + ", " + z + ")");
     }
 
     public static void pause(String id) {
@@ -225,7 +234,6 @@ public class AudioPlayer {
         AudioSource source = sources.remove(id);
         if (source != null) {
             source.cleanup();
-            System.out.println("[Audio] Unloaded: " + id);
         }
         loadingBuffers.remove(id);
     }
@@ -233,7 +241,9 @@ public class AudioPlayer {
     public static void setVolume(String id, float volume) {
         AudioSource source = sources.get(id);
         if (source != null) {
-            AL10.alSourcef(source.sourceId, AL10.AL_GAIN, volume);
+            source.baseVolume = volume;
+            float finalVolume = volume * getVolumeMultiplier();
+            AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
         }
     }
 
@@ -259,7 +269,14 @@ public class AudioPlayer {
     }
 
     public static void update() {
+        float volumeMultiplier = getVolumeMultiplier();
+
         for (AudioSource source : sources.values()) {
+            if (source.playing) {
+                float finalVolume = source.baseVolume * volumeMultiplier;
+                AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
+            }
+
             if (source.streaming) {
                 int processed = AL10.alGetSourcei(source.sourceId, AL10.AL_BUFFERS_PROCESSED);
                 while (processed > 0) {

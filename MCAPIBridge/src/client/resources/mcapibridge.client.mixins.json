@@ -1,9 +1,10 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "org.taskchou.mcapibridge.mixin.client",
+  "package": "org.taskchou.mcapibridge.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "SoundOptionsScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

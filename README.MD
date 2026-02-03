@@ -89,7 +89,10 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 📋 Update Log
 
-#### 2/4/2025 Alpha-0.3.0
+#### 2/4/2026 Alpha-0.3.1
+*   **Audio Settings Integration**: Added native "MCAPIBridge Audio" volume slider in Minecraft's Sound Options menu.
+
+#### 2/4/2026 Alpha-0.3.0
 *   **Custom Audio System**: Added full audio playback capabilities via OpenAL.
     *   **Tone Generation**: Create sine wave tones with configurable frequency and duration.
     *   **WAV Support**: Load and play custom `.wav` files (auto-converts stereo to mono).
@@ -98,14 +101,14 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
     *   **Playback Controls**: Volume adjustment, loop toggle, pause, stop, and unload functions.
     *   **Multi-Source**: Play multiple audio sources simultaneously for chords and layered audio.
 
-#### 2/1/2025 Alpha-0.2.2
+#### 2/1/2026 Alpha-0.2.2
 *   **Deep Data Control**: Added **NBT modification** support for entities and blocks, allowing advanced customization like giant mobs or custom loot.
 *   **Camera Control**: Implemented `lookAt` API to force players or entities to look at specific coordinates.
 
-#### 1/31/2025 Alpha-0.2.1
+#### 1/31/2026 Alpha-0.2.1
 *   **Bug Fixed**: Single hit or chat event can now be handled by multiple connected scripts.
 
-#### 1/31/2025 Alpha-0.2.0
+#### 1/31/2026 Alpha-0.2.0
 *   **Client-Side Input**: Now detects Left/Right clicks even when aiming at the air (using client packets).
 *   **Macro Keys**: Added 5 customizable keys in the game settings that scripts can listen to for triggering custom actions.
 

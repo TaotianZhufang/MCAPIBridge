@@ -18,6 +18,8 @@ public class McapibridgeClient implements ClientModInitializer {
     public void onInitializeClient() {
         System.out.println("MCAPIBridge Client Initialized");
 
+        ModConfig.load();
+
         ClientPlayNetworking.registerGlobalReceiver(Mcapibridge.AudioDataPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 handleAudioPacket(payload.action(), payload.id(), payload.sampleRate(), payload.data());
@@ -38,6 +40,8 @@ public class McapibridgeClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
+
+            AudioPlayer.setClient(client);
 
             AudioPlayer.updateListener(
                     (float) client.player.getX(),

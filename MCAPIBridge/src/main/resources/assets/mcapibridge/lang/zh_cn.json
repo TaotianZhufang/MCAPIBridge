@@ -1,5 +1,6 @@
 ﻿{
-  "category.mcapibridge": "MCAPI 编程接口控制",
+  "mcapibridge.options.customAudioVolume": "MCAPIBridge 音量",
+  "category.mcapibridge": "MCAPIBridge",
   "key.mcapibridge.macro1": "自定义宏按键 1",
   "key.mcapibridge.macro2": "自定义宏按键 2",
   "key.mcapibridge.macro3": "自定义宏按键 3",

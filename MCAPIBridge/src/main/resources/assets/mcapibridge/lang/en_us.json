@@ -1,5 +1,6 @@
 ﻿{
-  "category.mcapibridge": "MCAPI Bridge Controls",
+  "mcapibridge.options.customAudioVolume": "MCAPIBridge Audio",
+  "category.mcapibridge": "MCAPIBridge",
   "key.mcapibridge.macro1": "Macro Key 1",
   "key.mcapibridge.macro2": "Macro Key 2",
   "key.mcapibridge.macro3": "Macro Key 3",
