@@ -1,4 +1,4 @@
-from .minecraft import Minecraft, Vec3, PlayerPos, BlockHit, ChatPost
+from .minecraft import Minecraft, Vec3, PlayerPos, BlockHit, ChatPost, AudioManager
 
 __all__ = [
     "Minecraft",
@@ -6,4 +6,5 @@ __all__ = [
     "PlayerPos",
     "BlockHit",
     "ChatPost",
+    "AudioManager",
 ]
