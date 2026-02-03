@@ -45,6 +45,17 @@
 *   **Chat Listener**: Streams in-game chat messages to the external script in real-time.
 *   **Macro Keys**: Registers **5 Custom Macro Keys** in the game's controls menu. Scripts can listen for these specific key presses to trigger custom logic.
 
+### 🔊 Custom Audio System
+*   **Tone Generation**: Generate sine wave tones with custom frequency, duration, and sample rate.
+*   **WAV File Playback**: Load and play custom WAV audio files (8/16-bit PCM, Mono/Stereo).
+*   **3D Spatial Audio**: Play sounds at specific world coordinates with realistic **distance attenuation**.
+*   **Dynamic Controls**: Real-time **volume adjustment**, **loop playback**, **pause/stop**, and **position updates** for moving sound sources.
+*   **Multi-Source Mixing**: Play multiple audio sources simultaneously (e.g., chords, ambient layers).
+
+### 🖥️ Client-Side Rendering *(Coming Soon)*
+*   **HUD Overlay**: Draw custom text, rectangles, and progress bars on the player's screen.
+*   **3D World Drawing**: Render lines, boxes, and markers in the 3D world space.
+
 ### 📦 Deep Data Access (NBT)
 *   **NBT Modification**: Directly write raw NBT data to **Entities** and **Block Entities**.
 *   **Advanced Customization**: Create giants, freeze mobs (`NoAI`), make entities glow, or fill chests with custom loot using JSON-like NBT strings.
@@ -68,23 +79,38 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 *   It is designed for single-player, LAN, or private server use only.
 
 ## Bridges
-#### [Python Libary](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/README.MD)
+#### [Python Library](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/README.MD)
 
 #### [Python Examples](https://github.com/TaotianZhufang/MCAPIBridge/tree/main/Bridges/Example/Python)
 
-*More languages will be supported future*
+*More languages will be supported in the future.*
 
-## Update
-#### 2/1/2026 Alpha-0.2.2
+---
+
+## 📋 Update Log
+
+#### 2/4/2025 Alpha-0.3.0
+*   **Custom Audio System**: Added full audio playback capabilities via OpenAL.
+    *   **Tone Generation**: Create sine wave tones with configurable frequency and duration.
+    *   **WAV Support**: Load and play custom `.wav` files (auto-converts stereo to mono).
+    *   **3D Spatial Audio**: Play audio at world coordinates with realistic distance attenuation and rolloff control.
+    *   **Dynamic Position**: Update sound source positions in real-time for surround effects.
+    *   **Playback Controls**: Volume adjustment, loop toggle, pause, stop, and unload functions.
+    *   **Multi-Source**: Play multiple audio sources simultaneously for chords and layered audio.
+
+#### 2/1/2025 Alpha-0.2.2
 *   **Deep Data Control**: Added **NBT modification** support for entities and blocks, allowing advanced customization like giant mobs or custom loot.
 *   **Camera Control**: Implemented `lookAt` API to force players or entities to look at specific coordinates.
 
-#### 1/31/2026 Alpha-0.2.1
+#### 1/31/2025 Alpha-0.2.1
+*   **Bug Fixed**: Single hit or chat event can now be handled by multiple connected scripts.
 
-**Bug Fixed**: Single hit or chat event can't be handled by above two scripts.
-
-#### 1/31/2026 Alpha-0.2.0
-
+#### 1/31/2025 Alpha-0.2.0
 *   **Client-Side Input**: Now detects Left/Right clicks even when aiming at the air (using client packets).
 *   **Macro Keys**: Added 5 customizable keys in the game settings that scripts can listen to for triggering custom actions.
 
+---
+
+## 🗺️ Roadmap
+
+*   **More Language Bridges**: C#,C/C++,Arduino for ESP32,Micropython for ESP32 libraries.

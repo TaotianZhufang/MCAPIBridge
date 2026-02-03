@@ -115,6 +115,12 @@ Modifies the NBT data of a block entity (Tile Entity).
 
 ---
 
+### Audio
+
+#### [Audio Doc](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio.MD)
+
+---
+
 ### Info
 
 #### `getOnlinePlayers()`

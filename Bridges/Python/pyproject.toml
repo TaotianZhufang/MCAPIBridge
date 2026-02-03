@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcapibridge"
-version = "0.1.4"
-description = "Python libary for MCAPIBridge"
+version = "0.2.0"
+description ="Python libary for MCAPIBridge"
 requires-python = ">=3.7"
 license = { file = "LICENSE" }
 readme = "README.MD"

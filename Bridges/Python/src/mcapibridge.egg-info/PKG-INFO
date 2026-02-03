@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: mcapibridge
-Version: 0.1.4
+Version: 0.2.0
 Summary: Python libary for MCAPIBridge
 Author: TaotianZhufang
 License: MIT License
@@ -144,6 +144,12 @@ Modifies the NBT data of a block entity (Tile Entity).
 *   **x, y, z**: Integer coordinates.
 *   **nbt_string**: Valid SNBT string.
 
+
+---
+
+### Audio
+
+#### [Audio Doc](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio.MD)
 
 ---
 

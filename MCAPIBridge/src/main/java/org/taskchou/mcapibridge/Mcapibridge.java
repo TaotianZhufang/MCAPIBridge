@@ -11,6 +11,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.MapIdComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -18,11 +20,13 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.registry.Registries;
@@ -48,6 +52,8 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.item.FilledMapItem;
+import net.minecraft.item.map.MapState;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -68,7 +74,14 @@ public class Mcapibridge implements ModInitializer {
     public static final Identifier CLICK_PACKET_ID = new Identifier("mcapibridge", "click_event");
     private static BridgeSocketServer serverThread;
     public static final List<BridgeClientHandler> activeClients = new CopyOnWriteArrayList<>();
-
+    public static final java.util.Map<Integer, byte[]> customMapData = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, byte[]> pendingAudioData = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, AudioBuffer> audioBuffers = new java.util.concurrent.ConcurrentHashMap<>();
+    private static class AudioBuffer {
+        String target;
+        int sampleRate;
+        java.io.ByteArrayOutputStream data = new java.io.ByteArrayOutputStream();
+    }
 
     public record ClickPayload(int action) implements CustomPayload {
         public static final CustomPayload.Id<ClickPayload> ID = new CustomPayload.Id<>(CLICK_PACKET_ID);
@@ -80,10 +93,42 @@ public class Mcapibridge implements ModInitializer {
         public Id<? extends CustomPayload> getId() { return ID; }
     }
 
+    public record AudioDataPayload(String action, String id, int sampleRate, byte[] data) implements CustomPayload {
+        public static final CustomPayload.Id<AudioDataPayload> ID =
+                new CustomPayload.Id<>(new Identifier("mcapibridge", "audio"));
+
+        public static final PacketCodec<RegistryByteBuf, AudioDataPayload> CODEC = new PacketCodec<>() {
+            @Override
+            public AudioDataPayload decode(RegistryByteBuf buf) {
+                String action = buf.readString();
+                String id = buf.readString();
+                int sampleRate = buf.readInt();
+                int length = buf.readInt();
+                byte[] data = new byte[length];
+                buf.readBytes(data);
+                return new AudioDataPayload(action, id, sampleRate, data);
+            }
+
+            @Override
+            public void encode(RegistryByteBuf buf, AudioDataPayload payload) {
+                buf.writeString(payload.action);
+                buf.writeString(payload.id);
+                buf.writeInt(payload.sampleRate);
+                buf.writeInt(payload.data.length);
+                buf.writeBytes(payload.data);
+            }
+        };
+
+        @Override
+        public Id<? extends CustomPayload> getId() { return ID; }
+    }
+
     @Override
     public void onInitialize() {
 
         PayloadTypeRegistry.playC2S().register(ClickPayload.ID, ClickPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(AudioDataPayload.ID, AudioDataPayload.CODEC);
+
 
         ServerPlayNetworking.registerGlobalReceiver(ClickPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
@@ -128,6 +173,30 @@ public class Mcapibridge implements ModInitializer {
             player.sendMessage(Text.of("Use bridges(like Python) to control"));
             player.sendMessage(Text.of("§aConnect to the server IP at the port 4711"));
             player.sendMessage(Text.of("§e========================================"));
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+
+                    server.execute(() -> {
+                        for (var entry : customMapData.entrySet()) {
+                            int mapId = entry.getKey();
+                            byte[] colors = entry.getValue();
+
+                            MapIdComponent mapIdComponent = new MapIdComponent(mapId);
+
+                            MapUpdateS2CPacket packet = new MapUpdateS2CPacket(
+                                    mapIdComponent,
+                                    (byte) 0,
+                                    true,
+                                    Optional.of(java.util.Collections.emptyList()),
+                                    Optional.of(new MapState.UpdateData(0, 0, 128, 128, colors.clone()))
+                            );
+
+                            player.networkHandler.sendPacket(packet);
+                        }
+                    });
+                } catch (Exception ignored) {}
+            }).start();
 
             // eventQueue.add("PLAYER_JOIN," + player.getName().getString() + "," + player.getId());
         });
@@ -267,6 +336,16 @@ public class Mcapibridge implements ModInitializer {
                     case "player.lookAt": return lookAt(args);
                     case "entity.setNbt": return setEntityNbt(args);
                     case "block.setNbt": return setBlockNbt(args);
+                    case "audio.load": return audioLoad(args);
+                    case "audio.stream": return audioStream(args);
+                    case "audio.play": return audioPlay(args);
+                    case "audio.play3d": return audioPlay3d(args);
+                    case "audio.pause": return audioPause(args);
+                    case "audio.stop": return audioStop(args);
+                    case "audio.unload": return audioUnload(args);
+                    case "audio.volume": return audioVolume(args);
+                    case "audio.position": return audioPosition(args);
+                    case "audio.finishLoad": return audioFinishLoad(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
@@ -967,5 +1046,227 @@ public class Mcapibridge implements ModInitializer {
             }
             return sb.toString();
         }
+
+        private void packFloat(byte[] data, int offset, float value) {
+            int bits = Float.floatToIntBits(value);
+            data[offset] = (byte)(bits & 0xFF);
+            data[offset + 1] = (byte)((bits >> 8) & 0xFF);
+            data[offset + 2] = (byte)((bits >> 16) & 0xFF);
+            data[offset + 3] = (byte)((bits >> 24) & 0xFF);
+        }
+
+        private void sendAudioToTarget(String target, String action, String id, int sampleRate, byte[] data) {
+            mcServer.execute(() -> {
+                if (target.equals("@a")) {
+                    for (ServerPlayerEntity player : mcServer.getPlayerManager().getPlayerList()) {
+                        player.networkHandler.sendPacket(
+                                ServerPlayNetworking.createS2CPacket(new Mcapibridge.AudioDataPayload(action, id, sampleRate, data))
+                        );
+                    }
+                } else {
+                    ServerPlayerEntity player = target.isEmpty()
+                            ? (mcServer.getPlayerManager().getPlayerList().isEmpty() ? null : mcServer.getPlayerManager().getPlayerList().get(0))
+                            : findPlayer(target);
+                    if (player != null) {
+                        player.networkHandler.sendPacket(
+                                ServerPlayNetworking.createS2CPacket(new Mcapibridge.AudioDataPayload(action, id, sampleRate, data))
+                        );
+                    }
+                }
+            });
+        }
+
+        private String audioLoad(String[] args) {
+            // args: target, id, sampleRate, base64data
+            String target = args[0];
+            String id = args[1];
+            int sampleRate = Integer.parseInt(args[2]);
+            String base64Data = args[3];
+
+            byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
+
+            AudioBuffer buffer = new AudioBuffer();
+            buffer.target = target;
+            buffer.sampleRate = sampleRate;
+            try {
+                buffer.data.write(chunk);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            audioBuffers.put(id, buffer);
+            return null;
+        }
+
+        private String audioStream(String[] args) {
+            // args: target, id, sampleRate, base64chunk
+            String target = args[0];
+            String id = args[1];
+            int sampleRate = Integer.parseInt(args[2]);
+            String base64Data = args[3];
+
+            byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
+
+            AudioBuffer buffer = audioBuffers.get(id);
+            if (buffer != null) {
+                try {
+                    buffer.data.write(chunk);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+
+
+        private String audioPlay(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            float volume = args.length > 2 ? Float.parseFloat(args[2]) : 1.0f;
+            boolean loop = args.length > 3 && Boolean.parseBoolean(args[3]);
+
+            byte[] data = new byte[5];
+            packFloat(data, 0, volume);
+            data[4] = (byte)(loop ? 1 : 0);
+
+            sendAudioToTarget(target, "play", id, 0, data);
+            return null;
+        }
+
+        private String audioPlay3d(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            float x = Float.parseFloat(args[2]);
+            float y = Float.parseFloat(args[3]);
+            float z = Float.parseFloat(args[4]);
+            float volume = args.length > 5 ? Float.parseFloat(args[5]) : 1.0f;
+            float rolloff = args.length > 6 ? Float.parseFloat(args[6]) : 1.0f;
+            boolean loop = args.length > 7 && Boolean.parseBoolean(args[7]);
+
+            byte[] data = new byte[21];
+            packFloat(data, 0, volume);
+            packFloat(data, 4, rolloff);
+            packFloat(data, 8, x);
+            packFloat(data, 12, y);
+            packFloat(data, 16, z);
+            data[20] = (byte)(loop ? 1 : 0);
+
+            sendAudioToTarget(target, "play3d", id, 0, data);
+            return null;
+        }
+
+        private String audioPause(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            sendAudioToTarget(target, "pause", id, 0, new byte[0]);
+            return null;
+        }
+
+        private String audioStop(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            sendAudioToTarget(target, "stop", id, 0, new byte[0]);
+            return null;
+        }
+
+        private String audioUnload(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            sendAudioToTarget(target, "unload", id, 0, new byte[0]);
+            return null;
+        }
+
+        private String audioVolume(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            float volume = Float.parseFloat(args[2]);
+
+            byte[] data = new byte[4];
+            packFloat(data, 0, volume);
+
+            sendAudioToTarget(target, "volume", id, 0, data);
+            return null;
+        }
+
+        private String audioPosition(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            float x = Float.parseFloat(args[2]);
+            float y = Float.parseFloat(args[3]);
+            float z = Float.parseFloat(args[4]);
+
+            byte[] data = new byte[12];
+            packFloat(data, 0, x);
+            packFloat(data, 4, y);
+            packFloat(data, 8, z);
+
+            sendAudioToTarget(target, "position", id, 0, data);
+            return null;
+        }
+
+        private String audioFinishLoad(String[] args) {
+            // args: target, id
+            String target = args[0];
+            String id = args[1];
+
+            AudioBuffer buffer = audioBuffers.remove(id);
+            if (buffer == null) {
+                return null;
+            }
+
+            byte[] fullData = buffer.data.toByteArray();
+            int sampleRate = buffer.sampleRate;
+
+            mcServer.execute(() -> {
+                java.util.List<ServerPlayerEntity> players;
+                if (target.equals("@a")) {
+                    players = new java.util.ArrayList<>(mcServer.getPlayerManager().getPlayerList());
+                } else if (target.isEmpty()) {
+                    players = mcServer.getPlayerManager().getPlayerList().isEmpty()
+                            ? java.util.Collections.emptyList()
+                            : java.util.List.of(mcServer.getPlayerManager().getPlayerList().get(0));
+                } else {
+                    ServerPlayerEntity p = findPlayer(target);
+                    players = p != null ? java.util.List.of(p) : java.util.Collections.emptyList();
+                }
+
+                for (ServerPlayerEntity player : players) {
+                    int chunkSize = 32000;
+                    for (int i = 0; i < fullData.length; i += chunkSize) {
+                        int end = Math.min(i + chunkSize, fullData.length);
+                        byte[] chunk = java.util.Arrays.copyOfRange(fullData, i, end);
+
+                        String action;
+                        if (i == 0) {
+                            action = "loadStart";
+                        } else if (end == fullData.length) {
+                            action = "loadEnd";
+                        } else {
+                            action = "loadContinue";
+                        }
+
+                        player.networkHandler.sendPacket(
+                                ServerPlayNetworking.createS2CPacket(
+                                        new Mcapibridge.AudioDataPayload(action, id, sampleRate, chunk)
+                                )
+                        );
+                    }
+
+                    if (fullData.length <= 32000) {
+                        player.networkHandler.sendPacket(
+                                ServerPlayNetworking.createS2CPacket(
+                                        new Mcapibridge.AudioDataPayload("loadEnd", id, sampleRate, new byte[0])
+                                )
+                        );
+                    }
+                }
+            });
+
+            return null;
+        }
+
+
+
     }
 }

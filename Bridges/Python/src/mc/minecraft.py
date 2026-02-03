@@ -1,6 +1,104 @@
 import socket
 import math
 import time
+import base64
+import wave
+import struct
+
+class AudioManager:
+    def __init__(self, mc):
+        self.mc = mc
+    
+    def load_wav(self, target, audio_id, filepath):
+        with wave.open(filepath, 'rb') as wav:
+            channels = wav.getnchannels()
+            sample_width = wav.getsampwidth()
+            sample_rate = wav.getframerate()
+            frames = wav.readframes(wav.getnframes())
+        
+        if channels == 2:
+            samples = struct.unpack(f'<{len(frames)//2}h', frames)
+            mono_samples = []
+            for i in range(0, len(samples), 2):
+                mono_samples.append((samples[i] + samples[i+1]) // 2)
+            frames = struct.pack(f'<{len(mono_samples)}h', *mono_samples)
+    
+        if sample_width == 1:
+            samples = struct.unpack(f'{len(frames)}B', frames)
+            samples = [(s - 128) * 256 for s in samples]
+            frames = struct.pack(f'<{len(samples)}h', *samples)
+        
+        b64_data = base64.b64encode(frames).decode('ascii')
+        
+        chunk_size = 40000  
+        chunks = [b64_data[i:i + chunk_size] for i in range(0, len(b64_data), chunk_size)]
+    
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                self.mc._send(f"audio.load({target},{audio_id},{sample_rate},{chunk})")
+            else:
+                self.mc._send(f"audio.stream({target},{audio_id},{sample_rate},{chunk})")
+            time.sleep(0.02)
+    
+        self.mc._send(f"audio.finishLoad({target},{audio_id})")
+        
+        print(f"[Audio] Loaded {filepath}: {len(frames)} bytes, {sample_rate}Hz")
+    
+    def load_raw(self, target, audio_id, pcm_data, sample_rate=44100):
+        b64_data = base64.b64encode(pcm_data).decode('ascii')
+        
+        chunk_size = 40000
+        chunks = [b64_data[i:i + chunk_size] for i in range(0, len(b64_data), chunk_size)]
+        
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                self.mc._send(f"audio.load({target},{audio_id},{sample_rate},{chunk})")
+            else:
+                self.mc._send(f"audio.stream({target},{audio_id},{sample_rate},{chunk})")
+            time.sleep(0.02)
+    
+        self.mc._send(f"audio.finishLoad({target},{audio_id})")
+    
+    def play(self, target, audio_id, volume=1.0, loop=False):
+        loop_str = "true" if loop else "false"
+        self.mc._send(f"audio.play({target},{audio_id},{volume},{loop_str})")
+    
+    def play_at(self, audio_id, x, y, z, radius=32, volume=1.0):
+        self.mc._send(f"audio.playAt({audio_id},{x},{y},{z},{radius},{volume})")
+    
+    def play_3d(self, target, audio_id, x, y, z, volume=1.0, rolloff=1.0):
+        self.mc._send(f"audio.play3d({target},{audio_id},{x},{y},{z},{volume},{rolloff})")
+        
+    def pause(self, target, audio_id):
+        self.mc._send(f"audio.pause({target},{audio_id})")
+    
+    def stop(self, target, audio_id):
+        self.mc._send(f"audio.stop({target},{audio_id})")
+    
+    def unload(self, target, audio_id):
+        self.mc._send(f"audio.unload({target},{audio_id})")
+    
+    def set_volume(self, target, audio_id, volume):
+        """(0.0 - 1.0)"""
+        self.mc._send(f"audio.volume({target},{audio_id},{volume})")
+    
+    def generate_tone(self, target, audio_id, frequency=440, duration=1.0, sample_rate=44100):
+        import math
+        
+        num_samples = int(sample_rate * duration)
+        samples = []
+        
+        for i in range(num_samples):
+            t = i / sample_rate
+            value = int(32767 * math.sin(2 * math.pi * frequency * t))
+            samples.append(value)
+        
+        pcm_data = struct.pack(f'<{len(samples)}h', *samples)
+        self.load_raw(target, audio_id, pcm_data, sample_rate)
+
+    def set_position(self, target, audio_id, x, y, z):
+        self.mc._send(f"audio.position({target},{audio_id},{x},{y},{z})")
+
 
 class Vec3:
     def __init__(self, x, y, z):
@@ -41,7 +139,7 @@ class BlockHit:
         self.pos = Vec3(x, y, z)
         self.face = face
         self.entityId = entityId
-        self.action = action # 1=Left,2=Right, 101-105:Keyboard Action
+        self.action = action # 1=Left,2=Right,101-105:Keyboard Action
         if action == 1: self.type = "LEFT_CLICK"
         elif action == 2: self.type = "RIGHT_CLICK"
         elif action > 100: self.type = f"KEY_MACRO_{action - 100}"
@@ -54,6 +152,7 @@ class Minecraft:
         self.file_reader = None
         self.connected = False
         self._connect()
+        self.audio = AudioManager(self)
 
     def _connect(self):
         try:
@@ -353,3 +452,20 @@ class Minecraft:
         cmd = f"block.setNbt({int(x)},{int(y)},{int(z)},{nbt_string})"
         if dimension: cmd += f",{dimension}"
         self._send(cmd)
+    
+    def drawHandMap(self, pixels, target=None):
+        """
+        绘制指定玩家手中的地图
+       """
+        CHUNK_SIZE = 1024
+        for i in range(0, len(pixels), CHUNK_SIZE):
+            chunk = pixels[i : i + CHUNK_SIZE]
+            data_str = ",".join(map(str, chunk))
+        
+            cmd = f"map.drawHand({i},{data_str})"
+            if target:
+               cmd += f",{target}"
+        
+            self._send(cmd)
+            time.sleep(0.01)
+
