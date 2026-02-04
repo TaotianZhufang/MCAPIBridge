@@ -30,7 +30,7 @@ mc.postToChat("§aHello, Minecraft! Python is here.")
 
 ## Classes
 
-### Minecraft
+### `Minecraft`
 
 #### Basic
 
