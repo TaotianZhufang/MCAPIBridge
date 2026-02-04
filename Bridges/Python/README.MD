@@ -34,56 +34,56 @@ mc.postToChat("§aHello, Minecraft! Python is here.")
 
 #### Basic methods
 
-##### `postToChat(msg)`
+##### `Minecraft.postToChat(msg)`
 Send a message to chat screen.
 *   **msg**: String message.Support `§` .You can check it on Minecraft wiki.
 
-##### `runCommand(cmd)`
+##### `Minecraft.runCommand(cmd)`
 Run commands as Server.
 *   **cmd**: Srting command without '/'
 
-Ex: `mc.runCommand("time set day")`
+Ex: `Minecraft.runCommand("time set day")`
 
 ---
 
 #### World methods
 
-##### `setBlock(x, y, z, block_id, dimension=None)`
+##### `Minecraft.setBlock(x, y, z, block_id, dimension=None)`
 Set a block at the point given.
 *   **x, y, z**: Int positions.
 *   **block_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"stone"`, `"diamond_block"`.Support other namespaces.
 *	**dimension**: Optional String target dimension/player name.
 
-##### `getBlock(x, y, z, dimension=None)`
+##### `Minecraft.getBlock(x, y, z, dimension=None)`
 Gets the block ID at the specified coordinates.
 *   **x, y, z**: Int positions.
 *   **dimension**: Optional String target dimension/player name.
 *   **return**: String block ID.Ex.`"minecraft:grass_block"`.
 
-##### `spawnEntity(x, y, z, entity_id, yaw=0.0, pitch=0.0, dimension=None)`
+##### `Minecraft.spawnEntity(x, y, z, entity_id, yaw=0.0, pitch=0.0, dimension=None)`
 Spawn an entity at the point given.
 *   **entity_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"zombie"`, `"pig"`, `"lightning_bolt"`.Support other namespaces.
 *   **yaw**: Optional Int degree.Horizontal degree.
 *   **pitch**: Optional Int degree.Vertical degree.
 *   **dimension**: Optional String target dimension/player name.
 
-##### `setEntityVelocity(entity_id, vx, vy, vz)`
+##### `Minecraft.setEntityVelocity(entity_id, vx, vy, vz)`
 Sets the velocity of an entity.
 *   **entity_id**: Int ID.
 *   **vx, vy, vz**: Double velocity components.
 
-##### `setEntityNoGravity(entity_id, enable=True)`
+##### `Minecraft.setEntityNoGravity(entity_id, enable=True)`
 Enables or disables gravity for an entity.
 *   **entity_id**: Int ID.
 
-##### `getEntities(x, y, z, radius=10, dimension=None)`
+##### `Minecraft.getEntities(x, y, z, radius=10, dimension=None)`
 Gets the block ID at the specified coordinates.
 *   **x, y, z**: Double positions.
 *   **radius**: Double search radius.
 *   **dimension**: Optional String target dimension/player name.
 *   **return**: List of Dicts: [{'id': 123, 'type': 'minecraft:zombie', 'pos': Vec3}, ...]
 
-##### `spawnParticle(x, y, z, particle_id, count=10, dx=0.0, dy=0.0, dz=0.0, speed=0.0, dimension=None)`
+##### `Minecraft.spawnParticle(x, y, z, particle_id, count=10, dx=0.0, dy=0.0, dz=0.0, speed=0.0, dimension=None)`
 Spawn particle at the point given.
 *   **particle_id**: String ID.If it is Minecraft vanilla,the ID can be written without `Minecraft:`. Ex:`"flame"`, `"heart"`.Support other namespaces.
 *   **count**: Int count.
@@ -91,7 +91,7 @@ Spawn particle at the point given.
 *   **speed**: Optional double speed.
 *   **dimension**: Optional String target dimension/player name.
 
-##### `setSign(x, y, z, line1="", line2="", line3="", line4="", dimension=None)`
+##### `Minecraft.setSign(x, y, z, line1="", line2="", line3="", line4="", dimension=None)`
 Sets the text on a sign block.
 *   **x, y, z**: Int positions.
 *   **line1-4**: String text for each line.
@@ -99,19 +99,19 @@ Sets the text on a sign block.
 
 **The block at the position must already be a sign.**
 
-##### `lookAt(target, x, y, z)`
+##### `Minecraft.lookAt(target, x, y, z)`
 Forces a player or entity to look at a specific coordinate.
 *   **target**: String player name or Entity ID.
 *   **x, y, z**: The coordinate to look at.
 *   *Example*: `mc.lookAt("Steve", 0, 100, 0)` forces Steve to look up.
 
-##### `setEntityNbt(entity_id, nbt_string)`
+##### `Minecraft.setEntityNbt(entity_id, nbt_string)`
 Modifies the NBT data of an entity directly using JSON format.
 *   **entity_id**: Integer Entity ID.
 *   **nbt_string**: Valid SNBT string (e.g., `"{NoAI:1b, Glowing:1b}"`).
 *   *Note*: Useful for setting attributes like Scale in 1.20.6 (`{Attributes:[{Name:"generic.scale",Base:2.0d}]}`).
 
-##### `setBlockNbt(x, y, z, nbt_string, dimension=None)`
+##### `Minecraft.setBlockNbt(x, y, z, nbt_string, dimension=None)`
 Modifies the NBT data of a block entity (Tile Entity).
 *   **x, y, z**: Integer coordinates.
 *   **nbt_string**: Valid SNBT string.
@@ -127,26 +127,26 @@ Modifies the NBT data of a block entity (Tile Entity).
 
 #### Info methods
 
-##### `getOnlinePlayers()`
+##### `Minecraft.getOnlinePlayers()`
 Get players' name online.
 *   **return**: Dict:  `[{'name': 'Steve', 'id': 123}, ...]`.
 
-##### `getPlayerPos(target="")`
+##### `Minecraft.getPlayerPos(target="")`
 Get player's position and yaw and pitch.
 *   **target**: String player name.
 *   **return**: Int x,y,z and Double yaw,pitch.
 
-##### `getPlayerEntityId(name)`
+##### `Minecraft.getPlayerEntityId(name)`
 Get player's ID.
 *   **name**: String player name.
 *   **return**: Int ID.
 
-##### `getPlayerName(entity_id)`
+##### `Minecraft.getPlayerName(entity_id)`
 Get player's ID.
 *   **entity_id**: Int ID.
 *   **return**: String player name.
 
-##### `getPlayerDetails(target="")`
+##### `Minecraft.getPlayerDetails(target="")`
 Get player's details.
 *   **target**: String player name.
 *   **return**: Dict including
@@ -163,37 +163,37 @@ Get player's details.
 
 #### State methods
 
-##### `setHealth(target, amount)`
+##### `Minecraft.setHealth(target, amount)`
 Set player's health.
 *   **target**: String player name.
 *   **amount**: Double health.
 
-##### `setFood(target, amount)`
+##### `Minecraft.setFood(target, amount)`
 Set player's food.
 *   **target**: String player name.
 *   **amount**: Int food(0-20).
 
-##### `giveEffect(target, effect_name, duration_sec=30, amplifier=1)`
+##### `Minecraft.giveEffect(target, effect_name, duration_sec=30, amplifier=1)`
 Effect player.
 *   **effect_name**: String effect ID.Ex:`"speed"`,`"night_vision"`.
 *   **duration_sec**: Int seconds.
 *   **amplifier**: Int amplifier.
 
-##### `setFlying(target, allow_flight=True, is_flying=True)`
+##### `Minecraft.setFlying(target, allow_flight=True, is_flying=True)`
 Enable player to fly in survival mode.
 *   **target**: String player name.
 
-##### `setFlySpeed(target, speed=0.05)`
+##### `Minecraft.setFlySpeed(target, speed=0.05)`
 Set flight speed.
 *   **target**: String player name.
 *   **speed**: Double speed.Default 0.05.
 
-##### `setWalkSpeed(target, speed=0.1)`
+##### `Minecraft.setWalkSpeed(target, speed=0.1)`
 Set walk speed.
 *   **target**: String player name.
 *   **speed**: Double speed.Default 0.1.
 
-##### `setGodMode(target, enable=True)`
+##### `Minecraft.setGodMode(target, enable=True)`
 Enable invulnerability.
 *   **target**: String player name.
 
@@ -201,16 +201,16 @@ Enable invulnerability.
 
 #### Inventory methods
 
-##### `getInventory(target="")`
+##### `Minecraft.getInventory(target="")`
 Get player's inventory.
 *   **return**: List of Dicts.Every dict has `{'slot': block_ID, 'id': item_ID, 'count': item_count}`.
 
-##### `give(target, item_id, count=1)`
+##### `Minecraft.give(target, item_id, count=1)`
 Give player item.
 *   **item_id**: String item ID.
 *   **count**: Int count.
 
-##### `clearInventory(target, item_id="")`
+##### `Minecraft.clearInventory(target, item_id="")`
 Clear inventory.
 *   **target**: String player name.
 *   **item_id**: String item ID.
@@ -219,12 +219,12 @@ Clear inventory.
 
 #### TP methods
 
-##### `teleport(x, y, z, target="")`
+##### `Minecraft.teleport(x, y, z, target="")`
 TP player.
 *   **x, y, z**: Int target x,y,z.
 *   **target**: String player ID.
 
-##### `teleportEntity(entity_id, x, y, z)`
+##### `Minecraft.teleportEntity(entity_id, x, y, z)`
 TP entity.
 *   **entity_id**: Int entity id.
 
@@ -232,7 +232,7 @@ TP entity.
 
 #### Events methods
 
-##### `pollBlockHits()`
+##### `Minecraft.pollBlockHits()`
 Get click events.
 *   **return**: List Class `[BlockHit1,BlockHit2,.....]`
     * **pos**: Class Vec3
@@ -244,7 +244,7 @@ Get click events.
 	* **action**: Int action type:1--left click,2--right click,101-105--Keyboard pressed.(Bind keys at Minecraft settings)
 	* **type**: String action:"LEFT_CLICK" or "RIGHT_CLICK"
 
-##### `pollChatPosts()`
+##### `Minecraft.pollChatPosts()`
 Get player message events.
 *   **return**: List Class `[ChatPost1,ChatPost2,.....]`
 	* **name**: String player name.
@@ -254,7 +254,7 @@ Get player message events.
 
 #### Helper methods
 
-##### `getDirectionVector(target="")`
+##### `Minecraft.getDirectionVector(target="")`
 Calculates the direction vector based on a player's rotation. Useful for shooting projectiles.
 *   **target**: String player ID.
 *   **return**: Class `Vec3` normalized direction vector.
@@ -265,7 +265,7 @@ Calculates the direction vector based on a player's rotation. Useful for shootin
 Represents a 3D vector/coordinate.
 *   **properties**: `x`,`y`,`z`.
 *   **Methods**:
-    *   **length()**: Returns vector length.
+    *   **Vec3.length()**: Returns vector length.
 
 ---
 
@@ -273,4 +273,4 @@ Represents a 3D vector/coordinate.
 **Inherits Vec3** Represents player position with rotation.
 *   **properties**: `x`,`y`,`z`,`yaw`,`pitch`.
 *   **Methods**:
-    *   **forward(distance=1.0)**: Returns a new `Vec3` position at `distance` blocks ahead of the player's view.
+    *   **PlayerPos.forward(distance=1.0)**: Returns a new `Vec3` position at `distance` blocks ahead of the player's view.
