@@ -17,7 +17,7 @@ mc = Minecraft()
 
 ## 🎵 音频加载函数
 
-### `generate_tone(target, audio_id, frequency, duration, sample_rate)`
+### `generateTone(target, audioId, frequency, duration, sampleRate)`
 
 **功能**：生成正弦波音调
 
@@ -25,10 +25,10 @@ mc = Minecraft()
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | target | str | 玩家名，`""` 第一个玩家，`"@a"` 所有玩家 | 必填 |
-| audio_id | str | 音频唯一标识符（自定义命名） | 必填 |
+| audioId | str | 音频唯一标识符（自定义命名） | 必填 |
 | frequency | float | 频率 (Hz) | 440 |
 | duration | float | 持续时间 (秒) | 1.0 |
-| sample_rate | int | 采样率 | 44100 |
+| sampleRate | int | 采样率 | 44100 |
 
 **示例**：
 ```python
@@ -38,16 +38,16 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 生成 A4 音调 (440Hz)，持续 2 秒
-mc.audio.generate_tone(player, "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 
 # 生成高音 C (523Hz)，持续 1 秒
-mc.audio.generate_tone(player, "high_c", 523, 1.0)
+mc.audio.generateTone(player, "highC", 523, 1.0)
 
 # 对所有玩家生成音调
-mc.audio.generate_tone("@a", "alarm", 880, 3.0)
+mc.audio.generateTone("@a", "alarm", 880, 3.0)
 
 # 对第一个玩家生成
-mc.audio.generate_tone("", "tone", 440, 1.0)
+mc.audio.generateTone("", "tone", 440, 1.0)
 ```
 
 **常用频率参考**：
@@ -65,7 +65,7 @@ mc.audio.generate_tone("", "tone", 440, 1.0)
 
 ---
 
-### `load_wav(target, audio_id, filepath)`
+### `loadWav(target, audioId, filepath)`
 
 **功能**：加载 WAV 音频文件
 
@@ -73,7 +73,7 @@ mc.audio.generate_tone("", "tone", 440, 1.0)
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | target | str | 玩家名 |
-| audio_id | str | 音频唯一标识符 |
+| audioId | str | 音频唯一标识符 |
 | filepath | str | WAV 文件路径 |
 
 **支持格式**：
@@ -89,13 +89,13 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 加载音乐文件
-mc.audio.load_wav(player, "bgm", "music/background.wav")
+mc.audio.loadWav(player, "bgm", "music/background.wav")
 
 # 加载音效
-mc.audio.load_wav(player, "explosion", "sounds/boom.wav")
+mc.audio.loadWav(player, "explosion", "sounds/boom.wav")
 
 # 加载到所有玩家
-mc.audio.load_wav("@a", "victory", "sounds/win.wav")
+mc.audio.loadWav("@a", "victory", "sounds/win.wav")
 ```
 
 **注意**：
@@ -104,7 +104,7 @@ mc.audio.load_wav("@a", "victory", "sounds/win.wav")
 
 ---
 
-### `load_raw(target, audio_id, pcm_data, sample_rate)`
+### `loadRaw(target, audioId, pcmData, sampleRate)`
 
 **功能**：加载原始 PCM 音频数据
 
@@ -112,9 +112,9 @@ mc.audio.load_wav("@a", "victory", "sounds/win.wav")
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | target | str | 玩家名 | 必填 |
-| audio_id | str | 音频唯一标识符 | 必填 |
-| pcm_data | bytes | 16位有符号整数 PCM 数据 | 必填 |
-| sample_rate | int | 采样率 | 44100 |
+| audioId | str | 音频唯一标识符 | 必填 |
+| pcmData | bytes | 16位有符号整数 PCM 数据 | 必填 |
+| sampleRate | int | 采样率 | 44100 |
 
 **示例**：
 ```python
@@ -126,25 +126,25 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 手动生成音频数据
-sample_rate = 44100
+sampleRate = 44100
 duration = 2.0
 frequency = 440
 
 samples = []
-for i in range(int(sample_rate * duration)):
-    t = i / sample_rate
+for i in range(int(sampleRate * duration)):
+    t = i / sampleRate
     value = int(32767 * math.sin(2 * math.pi * frequency * t))
     samples.append(value)
 
-pcm_data = struct.pack(f'<{len(samples)}h', *samples)
-mc.audio.load_raw(player, "custom", pcm_data, sample_rate)
+pcmData = struct.pack(f'<{len(samples)}h', *samples)
+mc.audio.loadRaw(player, "custom", pcmData, sampleRate)
 ```
 
 ---
 
 ## ▶️ 播放控制函数
 
-### `play(target, audio_id, volume, loop)`
+### `play(target, audioId, volume, loop)`
 
 **功能**：普通播放（无 3D 效果）
 
@@ -152,7 +152,7 @@ mc.audio.load_raw(player, "custom", pcm_data, sample_rate)
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | target | str | 玩家名 | 必填 |
-| audio_id | str | 已加载的音频 ID | 必填 |
+| audioId | str | 已加载的音频 ID | 必填 |
 | volume | float | 音量 (0.0 - 1.0) | 1.0 |
 | loop | bool | 是否循环 | False |
 
@@ -165,7 +165,7 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 加载音频
-mc.audio.generate_tone(player, "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 time.sleep(1.0)
 
 # 普通播放
@@ -184,7 +184,7 @@ mc.audio.stop(player, "beep")
 
 ---
 
-### `play_3d(target, audio_id, x, y, z, volume, rolloff)`
+### `play3d(target, audioId, x, y, z, volume, rolloff)`
 
 **功能**：3D 空间音效播放
 
@@ -192,7 +192,7 @@ mc.audio.stop(player, "beep")
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
 | target | str | 玩家名 | 必填 |
-| audio_id | str | 已加载的音频 ID | 必填 |
+| audioId | str | 已加载的音频 ID | 必填 |
 | x, y, z | float | 音源在世界中的坐标 | 必填 |
 | volume | float | 音量 (0.0 - 1.0) | 1.0 |
 | rolloff | float | 距离衰减系数 | 1.0 |
@@ -216,25 +216,25 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # 在玩家前方 10 格播放
-mc.audio.generate_tone(player, "front", 500, 5.0)
+mc.audio.generateTone(player, "front", 500, 5.0)
 time.sleep(1.0)
 
 front = pos.forward(10)
-mc.audio.play_3d(player, "front", front.x, front.y, front.z, 1.0, 1.0)
+mc.audio.play3d(player, "front", front.x, front.y, front.z, 1.0, 1.0)
 
 # 在固定坐标播放
-mc.audio.play_3d(player, "sound", 100, 64, 200, 0.8, 0.5)
+mc.audio.play3d(player, "sound", 100, 64, 200, 0.8, 0.5)
 
 # 慢衰减（远处也能听到）
-mc.audio.play_3d(player, "ambient", x, y, z, 1.0, 0.3)
+mc.audio.play3d(player, "ambient", x, y, z, 1.0, 0.3)
 
 # 快衰减（只有近处能听到）
-mc.audio.play_3d(player, "whisper", x, y, z, 1.0, 2.0)
+mc.audio.play3d(player, "whisper", x, y, z, 1.0, 2.0)
 ```
 
 ---
 
-### `pause(target, audio_id)`
+### `pause(target, audioId)`
 
 **功能**：暂停播放
 
@@ -242,7 +242,7 @@ mc.audio.play_3d(player, "whisper", x, y, z, 1.0, 2.0)
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | target | str | 玩家名 |
-| audio_id | str | 音频 ID |
+| audioId | str | 音频 ID |
 
 **示例**：
 ```python
@@ -265,7 +265,7 @@ mc.audio.play(player, "music")
 
 ---
 
-### `stop(target, audio_id)`
+### `stop(target, audioId)`
 
 **功能**：停止播放
 
@@ -273,7 +273,7 @@ mc.audio.play(player, "music")
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | target | str | 玩家名 |
-| audio_id | str | 音频 ID |
+| audioId | str | 音频 ID |
 
 **示例**：
 ```python
@@ -294,7 +294,7 @@ mc.audio.stop(player, "music")
 
 ## 🎛️ 音频属性函数
 
-### `set_volume(target, audio_id, volume)`
+### `setVolume(target, audioId, volume)`
 
 **功能**：动态调整音量
 
@@ -302,7 +302,7 @@ mc.audio.stop(player, "music")
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | target | str | 玩家名 |
-| audio_id | str | 音频 ID |
+| audioId | str | 音频 ID |
 | volume | float | 音量 (0.0 - 1.0) |
 
 **示例**：
@@ -317,15 +317,22 @@ mc.audio.play(player, "music")
 
 # 音量渐变
 for v in [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]:
-    mc.audio.set_volume(player, "music", v)
+    mc.audio.setVolume(player, "music", v)
     time.sleep(0.5)
 ```
 
 ---
 
-### `set_position(target, audio_id, x, y, z)` (需通过 _send 调用)
+### `setPosition(target, audioId, x, y, z)`
 
 **功能**：更新 3D 音源位置（用于移动的音源）
+
+**参数**：
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| target | str | 玩家名 |
+| audioId | str | 音频 ID |
+| x, y, z | float | 新的世界坐标 |
 
 **示例**：
 ```python
@@ -337,20 +344,20 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # 播放 3D 音效
-mc.audio.play_3d(player, "moving", pos.x + 10, pos.y, pos.z, 1.0, 0.5)
+mc.audio.play3d(player, "moving", pos.x + 10, pos.y, pos.z, 1.0, 0.5)
 
 # 让音源绕玩家转圈
 for i in range(60):
     angle = i * 0.1
     x = pos.x + 10 * math.cos(angle)
     z = pos.z + 10 * math.sin(angle)
-    mc._send(f"audio.position({player},moving,{x},{pos.y},{z})")
+    mc.audio.setPosition(player, "moving", x, pos.y, z)
     time.sleep(0.1)
 ```
 
 ---
 
-### `unload(target, audio_id)`
+### `unload(target, audioId)`
 
 **功能**：卸载音频，释放内存
 
@@ -358,7 +365,7 @@ for i in range(60):
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | target | str | 玩家名 |
-| audio_id | str | 音频 ID |
+| audioId | str | 音频 ID |
 
 **示例**：
 ```python
@@ -372,8 +379,8 @@ mc.audio.stop(player, "music")
 mc.audio.unload(player, "music")
 
 # 批量卸载
-audio_ids = ["sound1", "sound2", "sound3"]
-for aid in audio_ids:
+audioIds = ["sound1", "sound2", "sound3"]
+for aid in audioIds:
     mc.audio.unload(player, aid)
 ```
 
@@ -391,7 +398,7 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 生成并播放
-mc.audio.generate_tone(player, "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 time.sleep(1.0)
 mc.audio.play(player, "beep")
 time.sleep(2.5)
@@ -410,7 +417,7 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # 加载 WAV 文件
-mc.audio.load_wav(player, "bgm", "music.wav")
+mc.audio.loadWav(player, "bgm", "music.wav")
 time.sleep(2.0)
 
 # 循环播放
@@ -421,7 +428,7 @@ time.sleep(30)
 
 # 渐弱结束
 for v in [0.5, 0.4, 0.3, 0.2, 0.1, 0.0]:
-    mc.audio.set_volume(player, "bgm", v)
+    mc.audio.setVolume(player, "bgm", v)
     time.sleep(0.3)
 
 mc.audio.stop(player, "bgm")
@@ -441,14 +448,14 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # 生成音效
-mc.audio.generate_tone(player, "alert", 600, 3.0)
+mc.audio.generateTone(player, "alert", 600, 3.0)
 time.sleep(1.0)
 
 # 在玩家前方 10 格播放
 front = pos.forward(10)
-mc.audio.play_3d(player, "alert", front.x, front.y, front.z, 1.0, 1.0)
+mc.audio.play3d(player, "alert", front.x, front.y, front.z, 1.0, 1.0)
 
-mc.postToChat("转动视角感受 3D 音效!")
+mc.postToChat("Turn around to feel the 3D effect!")
 time.sleep(4)
 
 mc.audio.unload(player, "alert")
@@ -468,13 +475,13 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # 生成长音频
-mc.audio.generate_tone(player, "surround", 500, 15.0)
+mc.audio.generateTone(player, "surround", 500, 15.0)
 time.sleep(1.5)
 
 # 开始播放
-mc.audio.play_3d(player, "surround", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
+mc.audio.play3d(player, "surround", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
 
-mc.postToChat("声音绕着你转圈!")
+mc.postToChat("Sound circling around you!")
 
 # 绕圈
 radius = 10
@@ -482,7 +489,7 @@ for i in range(80):
     angle = i * 0.12
     x = pos.x + radius * math.cos(angle)
     z = pos.z + radius * math.sin(angle)
-    mc._send(f"audio.position({player},surround,{x},{pos.y},{z})")
+    mc.audio.setPosition(player, "surround", x, pos.y, z)
     time.sleep(0.1)
 
 mc.audio.stop(player, "surround")
@@ -501,22 +508,22 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # C 大调和弦: C E G
-mc.audio.generate_tone(player, "c", 262, 3.0)
-mc.audio.generate_tone(player, "e", 330, 3.0)
-mc.audio.generate_tone(player, "g", 392, 3.0)
+mc.audio.generateTone(player, "noteC", 262, 3.0)
+mc.audio.generateTone(player, "noteE", 330, 3.0)
+mc.audio.generateTone(player, "noteG", 392, 3.0)
 time.sleep(1.5)
 
-mc.postToChat("C 大调和弦!")
+mc.postToChat("C Major Chord!")
 
 # 同时播放
-mc.audio.play(player, "c", volume=0.6)
-mc.audio.play(player, "e", volume=0.6)
-mc.audio.play(player, "g", volume=0.6)
+mc.audio.play(player, "noteC", volume=0.6)
+mc.audio.play(player, "noteE", volume=0.6)
+mc.audio.play(player, "noteG", volume=0.6)
 
 time.sleep(4)
 
 # 清理
-for note in ["c", "e", "g"]:
+for note in ["noteC", "noteE", "noteG"]:
     mc.audio.unload(player, note)
 ```
 
@@ -532,32 +539,32 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
-mc.audio.generate_tone(player, "approach", 440, 10.0)
+mc.audio.generateTone(player, "approach", 440, 10.0)
 time.sleep(1.0)
 
 # 从远处开始
-start_dist = 50
-end_dist = 3
+startDist = 50
+endDist = 3
 
-mc.audio.play_3d(player, "approach", pos.x, pos.y, pos.z + start_dist, 1.0, 1.0)
+mc.audio.play3d(player, "approach", pos.x, pos.y, pos.z + startDist, 1.0, 1.0)
 
-mc.postToChat("声音靠近中...")
+mc.postToChat("Sound approaching...")
 
 # 靠近
 for i in range(30):
-    dist = start_dist - (start_dist - end_dist) * (i / 30)
-    mc._send(f"audio.position({player},approach,{pos.x},{pos.y},{pos.z + dist})")
+    dist = startDist - (startDist - endDist) * (i / 30)
+    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
     time.sleep(0.1)
 
-mc.postToChat("最近点!")
+mc.postToChat("Closest point!")
 time.sleep(1)
 
-mc.postToChat("声音远去中...")
+mc.postToChat("Sound moving away...")
 
 # 远去
 for i in range(30):
-    dist = end_dist + (start_dist - end_dist) * (i / 30)
-    mc._send(f"audio.position({player},approach,{pos.x},{pos.y},{pos.z + dist})")
+    dist = endDist + (startDist - endDist) * (i / 30)
+    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
     time.sleep(0.1)
 
 mc.audio.stop(player, "approach")
@@ -570,7 +577,7 @@ mc.audio.unload(player, "approach")
 
 1. **加载等待**：音频加载需要时间，大文件需要更长等待
    ```python
-   mc.audio.generate_tone(player, "tone", 440, 5.0)
+   mc.audio.generateTone(player, "tone", 440, 5.0)
    time.sleep(1.0)  # 等待加载
    mc.audio.play(player, "tone")
    ```
@@ -589,3 +596,41 @@ mc.audio.unload(player, "approach")
    - `"PlayerName"` - 指定玩家
    - `""` - 第一个玩家
    - `"@a"` - 所有玩家
+
+---
+
+## 🔧 快速参考
+
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+# 生成音调
+mc.audio.generateTone(player, "id", frequency=440, duration=2.0)
+
+# 加载 WAV
+mc.audio.loadWav(player, "id", "file.wav")
+
+# 普通播放
+mc.audio.play(player, "id", volume=1.0, loop=False)
+
+# 3D 播放
+mc.audio.play3d(player, "id", x, y, z, volume=1.0, rolloff=1.0)
+
+# 更新位置
+mc.audio.setPosition(player, "id", x, y, z)
+
+# 设置音量
+mc.audio.setVolume(player, "id", 0.5)
+
+# 暂停
+mc.audio.pause(player, "id")
+
+# 停止
+mc.audio.stop(player, "id")
+
+# 卸载
+mc.audio.unload(player, "id")
+```

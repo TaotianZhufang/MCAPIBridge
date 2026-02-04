@@ -9,7 +9,7 @@ class AudioManager:
     def __init__(self, mc):
         self.mc = mc
     
-    def load_wav(self, target, audio_id, filepath):
+    def loadWav(self, target, audioId, filepath):
         with wave.open(filepath, 'rb') as wav:
             channels = wav.getnchannels()
             sample_width = wav.getsampwidth()
@@ -22,7 +22,7 @@ class AudioManager:
             for i in range(0, len(samples), 2):
                 mono_samples.append((samples[i] + samples[i+1]) // 2)
             frames = struct.pack(f'<{len(mono_samples)}h', *mono_samples)
-    
+        
         if sample_width == 1:
             samples = struct.unpack(f'{len(frames)}B', frames)
             samples = [(s - 128) * 256 for s in samples]
@@ -31,74 +31,68 @@ class AudioManager:
         b64_data = base64.b64encode(frames).decode('ascii')
         
         chunk_size = 40000  
-        chunks = [b64_data[i:i + chunk_size] for i in range(0, len(b64_data), chunk_size)]
-    
-        for i, chunk in enumerate(chunks):
+        for i in range(0, len(b64_data), chunk_size):
+            chunk = b64_data[i:i + chunk_size]
             if i == 0:
-                self.mc._send(f"audio.load({target},{audio_id},{sample_rate},{chunk})")
+                self.mc._send(f"audio.load({target},{audioId},{sample_rate},{chunk})")
             else:
-                self.mc._send(f"audio.stream({target},{audio_id},{sample_rate},{chunk})")
+                self.mc._send(f"audio.stream({target},{audioId},{sample_rate},{chunk})")
             time.sleep(0.02)
-    
-        self.mc._send(f"audio.finishLoad({target},{audio_id})")
         
+        self.mc._send(f"audio.finishLoad({target},{audioId})")
         print(f"[Audio] Loaded {filepath}: {len(frames)} bytes, {sample_rate}Hz")
     
-    def load_raw(self, target, audio_id, pcm_data, sample_rate=44100):
-        b64_data = base64.b64encode(pcm_data).decode('ascii')
+    def loadRaw(self, target, audioId, pcmData, sampleRate=44100):
+        b64_data = base64.b64encode(pcmData).decode('ascii')
         
         chunk_size = 40000
-        chunks = [b64_data[i:i + chunk_size] for i in range(0, len(b64_data), chunk_size)]
-        
-        for i, chunk in enumerate(chunks):
+        for i in range(0, len(b64_data), chunk_size):
+            chunk = b64_data[i:i + chunk_size]
             if i == 0:
-                self.mc._send(f"audio.load({target},{audio_id},{sample_rate},{chunk})")
+                self.mc._send(f"audio.load({target},{audioId},{sampleRate},{chunk})")
             else:
-                self.mc._send(f"audio.stream({target},{audio_id},{sample_rate},{chunk})")
+                self.mc._send(f"audio.stream({target},{audioId},{sampleRate},{chunk})")
             time.sleep(0.02)
-    
-        self.mc._send(f"audio.finishLoad({target},{audio_id})")
-    
-    def play(self, target, audio_id, volume=1.0, loop=False):
-        loop_str = "true" if loop else "false"
-        self.mc._send(f"audio.play({target},{audio_id},{volume},{loop_str})")
-    
-    def play_at(self, audio_id, x, y, z, radius=32, volume=1.0):
-        self.mc._send(f"audio.playAt({audio_id},{x},{y},{z},{radius},{volume})")
-    
-    def play_3d(self, target, audio_id, x, y, z, volume=1.0, rolloff=1.0):
-        self.mc._send(f"audio.play3d({target},{audio_id},{x},{y},{z},{volume},{rolloff})")
         
-    def pause(self, target, audio_id):
-        self.mc._send(f"audio.pause({target},{audio_id})")
+        self.mc._send(f"audio.finishLoad({target},{audioId})")
     
-    def stop(self, target, audio_id):
-        self.mc._send(f"audio.stop({target},{audio_id})")
-    
-    def unload(self, target, audio_id):
-        self.mc._send(f"audio.unload({target},{audio_id})")
-    
-    def set_volume(self, target, audio_id, volume):
-        """(0.0 - 1.0)"""
-        self.mc._send(f"audio.volume({target},{audio_id},{volume})")
-    
-    def generate_tone(self, target, audio_id, frequency=440, duration=1.0, sample_rate=44100):
-        import math
-        
-        num_samples = int(sample_rate * duration)
+    def generateTone(self, target, audioId, frequency=440, duration=1.0, sampleRate=44100):
+        numSamples = int(sampleRate * duration)
         samples = []
         
-        for i in range(num_samples):
-            t = i / sample_rate
+        for i in range(numSamples):
+            t = i / sampleRate
             value = int(32767 * math.sin(2 * math.pi * frequency * t))
             samples.append(value)
         
-        pcm_data = struct.pack(f'<{len(samples)}h', *samples)
-        self.load_raw(target, audio_id, pcm_data, sample_rate)
-
-    def set_position(self, target, audio_id, x, y, z):
-        self.mc._send(f"audio.position({target},{audio_id},{x},{y},{z})")
-
+        pcmData = struct.pack(f'<{len(samples)}h', *samples)
+        self.loadRaw(target, audioId, pcmData, sampleRate)
+    
+    def play(self, target, audioId, volume=1.0, loop=False):
+        loopStr = "true" if loop else "false"
+        self.mc._send(f"audio.play({target},{audioId},{volume},{loopStr})")
+    
+    def play3d(self, target, audioId, x, y, z, volume=1.0, rolloff=1.0):
+        self.mc._send(f"audio.play3d({target},{audioId},{x},{y},{z},{volume},{rolloff})")
+    
+    def playAt(self, audioId, x, y, z, radius=32, volume=1.0):
+        self.mc._send(f"audio.playAt({audioId},{x},{y},{z},{radius},{volume})")
+    
+    def pause(self, target, audioId):
+        self.mc._send(f"audio.pause({target},{audioId})")
+    
+    def stop(self, target, audioId):
+        self.mc._send(f"audio.stop({target},{audioId})")
+    
+    def unload(self, target, audioId):
+        self.mc._send(f"audio.unload({target},{audioId})")
+    
+    def setVolume(self, target, audioId, volume):
+        """(0.0 - 1.0)"""
+        self.mc._send(f"audio.volume({target},{audioId},{volume})")
+    
+    def setPosition(self, target, audioId, x, y, z):
+        self.mc._send(f"audio.position({target},{audioId},{x},{y},{z})")
 
 class Vec3:
     def __init__(self, x, y, z):

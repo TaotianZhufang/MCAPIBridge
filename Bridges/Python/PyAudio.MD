@@ -6,11 +6,18 @@
 
 All audio functions are accessed via `mc.audio`.
 
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+# Access audio functions via mc.audio
+```
+
 ---
 
 ## 🎵 Audio Loading Functions
 
-### `generate_tone(target, audio_id, frequency, duration, sample_rate)`
+### `generateTone(target, audioId, frequency, duration, sampleRate)`
 
 **Function**: Generate a sine wave tone
 
@@ -18,24 +25,29 @@ All audio functions are accessed via `mc.audio`.
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | target | str | Player name, `""` for first player, `"@a"` for all players | Required |
-| audio_id | str | Unique audio identifier (custom name) | Required |
+| audioId | str | Unique audio identifier | Required |
 | frequency | float | Frequency in Hz | 440 |
 | duration | float | Duration in seconds | 1.0 |
-| sample_rate | int | Sample rate | 44100 |
+| sampleRate | int | Sample rate | 44100 |
 
-**Examples**:
+**Example**:
 ```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Generate A4 tone (440Hz), 2 seconds
-mc.audio.generate_tone("Steve", "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 
 # Generate high C (523Hz), 1 second
-mc.audio.generate_tone("Steve", "high_c", 523, 1.0)
+mc.audio.generateTone(player, "highC", 523, 1.0)
 
 # Generate for all players
-mc.audio.generate_tone("@a", "alarm", 880, 3.0)
+mc.audio.generateTone("@a", "alarm", 880, 3.0)
 
 # Generate for first player
-mc.audio.generate_tone("", "tone", 440, 1.0)
+mc.audio.generateTone("", "tone", 440, 1.0)
 ```
 
 **Common Frequency Reference**:
@@ -53,7 +65,7 @@ mc.audio.generate_tone("", "tone", 440, 1.0)
 
 ---
 
-### `load_wav(target, audio_id, filepath)`
+### `loadWav(target, audioId, filepath)`
 
 **Function**: Load a WAV audio file
 
@@ -61,7 +73,7 @@ mc.audio.generate_tone("", "tone", 440, 1.0)
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
-| audio_id | str | Unique audio identifier |
+| audioId | str | Unique audio identifier |
 | filepath | str | Path to WAV file |
 
 **Supported Formats**:
@@ -69,16 +81,21 @@ mc.audio.generate_tone("", "tone", 440, 1.0)
 - Mono or Stereo (auto-converts to mono)
 - Any sample rate
 
-**Examples**:
+**Example**:
 ```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Load music file
-mc.audio.load_wav("Steve", "bgm", "music/background.wav")
+mc.audio.loadWav(player, "bgm", "music/background.wav")
 
 # Load sound effect
-mc.audio.load_wav("Steve", "explosion", "sounds/boom.wav")
+mc.audio.loadWav(player, "explosion", "sounds/boom.wav")
 
 # Load for all players
-mc.audio.load_wav("@a", "victory", "sounds/win.wav")
+mc.audio.loadWav("@a", "victory", "sounds/win.wav")
 ```
 
 **Notes**:
@@ -87,7 +104,7 @@ mc.audio.load_wav("@a", "victory", "sounds/win.wav")
 
 ---
 
-### `load_raw(target, audio_id, pcm_data, sample_rate)`
+### `loadRaw(target, audioId, pcmData, sampleRate)`
 
 **Function**: Load raw PCM audio data
 
@@ -95,35 +112,39 @@ mc.audio.load_wav("@a", "victory", "sounds/win.wav")
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | target | str | Player name | Required |
-| audio_id | str | Unique audio identifier | Required |
-| pcm_data | bytes | 16-bit signed integer PCM data | Required |
-| sample_rate | int | Sample rate | 44100 |
+| audioId | str | Unique audio identifier | Required |
+| pcmData | bytes | 16-bit signed integer PCM data | Required |
+| sampleRate | int | Sample rate | 44100 |
 
 **Example**:
 ```python
+from mc import Minecraft
 import struct
 import math
 
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Manually generate audio data
-sample_rate = 44100
+sampleRate = 44100
 duration = 2.0
 frequency = 440
 
 samples = []
-for i in range(int(sample_rate * duration)):
-    t = i / sample_rate
+for i in range(int(sampleRate * duration)):
+    t = i / sampleRate
     value = int(32767 * math.sin(2 * math.pi * frequency * t))
     samples.append(value)
 
-pcm_data = struct.pack(f'<{len(samples)}h', *samples)
-mc.audio.load_raw("Steve", "custom", pcm_data, sample_rate)
+pcmData = struct.pack(f'<{len(samples)}h', *samples)
+mc.audio.loadRaw(player, "custom", pcmData, sampleRate)
 ```
 
 ---
 
 ## ▶️ Playback Control Functions
 
-### `play(target, audio_id, volume, loop)`
+### `play(target, audioId, volume, loop)`
 
 **Function**: Normal playback (no 3D effect)
 
@@ -131,33 +152,39 @@ mc.audio.load_raw("Steve", "custom", pcm_data, sample_rate)
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | target | str | Player name | Required |
-| audio_id | str | Loaded audio ID | Required |
+| audioId | str | Loaded audio ID | Required |
 | volume | float | Volume (0.0 - 1.0) | 1.0 |
 | loop | bool | Whether to loop | False |
 
-**Examples**:
+**Example**:
 ```python
+from mc import Minecraft
+import time
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Load audio
-mc.audio.generate_tone("Steve", "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 time.sleep(1.0)
 
 # Normal playback
-mc.audio.play("Steve", "beep")
+mc.audio.play(player, "beep")
 
 # Set volume
-mc.audio.play("Steve", "beep", volume=0.5)
+mc.audio.play(player, "beep", volume=0.5)
 
 # Loop playback
-mc.audio.play("Steve", "beep", volume=0.8, loop=True)
+mc.audio.play(player, "beep", volume=0.8, loop=True)
 
 # Stop after 3 seconds
 time.sleep(3)
-mc.audio.stop("Steve", "beep")
+mc.audio.stop(player, "beep")
 ```
 
 ---
 
-### `play_3d(target, audio_id, x, y, z, volume, rolloff)`
+### `play3d(target, audioId, x, y, z, volume, rolloff)`
 
 **Function**: 3D spatial audio playback
 
@@ -165,43 +192,49 @@ mc.audio.stop("Steve", "beep")
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | target | str | Player name | Required |
-| audio_id | str | Loaded audio ID | Required |
+| audioId | str | Loaded audio ID | Required |
 | x, y, z | float | Sound source world coordinates | Required |
 | volume | float | Volume (0.0 - 1.0) | 1.0 |
 | rolloff | float | Distance attenuation factor | 1.0 |
 
-**Rolloff Parameter Explanation**:
+**Rolloff Parameter**:
 | Value | Effect |
 |-------|--------|
 | 0.5 | Slow attenuation, audible from far away |
 | 1.0 | Normal attenuation |
 | 2.0 | Fast attenuation, only audible nearby |
 
-**Examples**:
+**Example**:
 ```python
+from mc import Minecraft
+import time
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Get player position
-pos = mc.getPlayerPos("Steve")
+pos = mc.getPlayerPos(player)
 
 # Play 10 blocks in front of player
-mc.audio.generate_tone("Steve", "front", 500, 5.0)
+mc.audio.generateTone(player, "front", 500, 5.0)
 time.sleep(1.0)
 
 front = pos.forward(10)
-mc.audio.play_3d("Steve", "front", front.x, front.y, front.z, 1.0, 1.0)
+mc.audio.play3d(player, "front", front.x, front.y, front.z, 1.0, 1.0)
 
 # Play at fixed coordinates
-mc.audio.play_3d("Steve", "sound", 100, 64, 200, 0.8, 0.5)
+mc.audio.play3d(player, "sound", 100, 64, 200, 0.8, 0.5)
 
 # Slow attenuation (audible from far)
-mc.audio.play_3d("Steve", "ambient", x, y, z, 1.0, 0.3)
+mc.audio.play3d(player, "ambient", x, y, z, 1.0, 0.3)
 
 # Fast attenuation (only audible nearby)
-mc.audio.play_3d("Steve", "whisper", x, y, z, 1.0, 2.0)
+mc.audio.play3d(player, "whisper", x, y, z, 1.0, 2.0)
 ```
 
 ---
 
-### `pause(target, audio_id)`
+### `pause(target, audioId)`
 
 **Function**: Pause playback
 
@@ -209,24 +242,30 @@ mc.audio.play_3d("Steve", "whisper", x, y, z, 1.0, 2.0)
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
-| audio_id | str | Audio ID |
+| audioId | str | Audio ID |
 
 **Example**:
 ```python
-mc.audio.play("Steve", "music", loop=True)
+from mc import Minecraft
+import time
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+mc.audio.play(player, "music", loop=True)
 time.sleep(5)
 
 # Pause
-mc.audio.pause("Steve", "music")
+mc.audio.pause(player, "music")
 time.sleep(2)
 
 # Resume playback
-mc.audio.play("Steve", "music")
+mc.audio.play(player, "music")
 ```
 
 ---
 
-### `stop(target, audio_id)`
+### `stop(target, audioId)`
 
 **Function**: Stop playback
 
@@ -234,22 +273,28 @@ mc.audio.play("Steve", "music")
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
-| audio_id | str | Audio ID |
+| audioId | str | Audio ID |
 
 **Example**:
 ```python
-mc.audio.play("Steve", "music", loop=True)
+from mc import Minecraft
+import time
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+mc.audio.play(player, "music", loop=True)
 time.sleep(10)
 
 # Stop
-mc.audio.stop("Steve", "music")
+mc.audio.stop(player, "music")
 ```
 
 ---
 
 ## 🎛️ Audio Property Functions
 
-### `set_volume(target, audio_id, volume)`
+### `setVolume(target, audioId, volume)`
 
 **Function**: Dynamically adjust volume
 
@@ -257,46 +302,62 @@ mc.audio.stop("Steve", "music")
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
-| audio_id | str | Audio ID |
+| audioId | str | Audio ID |
 | volume | float | Volume (0.0 - 1.0) |
 
 **Example**:
 ```python
-mc.audio.play("Steve", "music")
+from mc import Minecraft
+import time
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+mc.audio.play(player, "music")
 
 # Volume fade
 for v in [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]:
-    mc.audio.set_volume("Steve", "music", v)
+    mc.audio.setVolume(player, "music", v)
     time.sleep(0.5)
 ```
 
 ---
 
-### `set_position(target, audio_id, x, y, z)` (requires _send call)
+### `setPosition(target, audioId, x, y, z)`
 
 **Function**: Update 3D sound source position (for moving sources)
 
+**Parameters**:
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| target | str | Player name |
+| audioId | str | Audio ID |
+| x, y, z | float | New world coordinates |
+
 **Example**:
 ```python
+from mc import Minecraft
 import math
 
-pos = mc.getPlayerPos("Steve")
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+pos = mc.getPlayerPos(player)
 
 # Play 3D sound effect
-mc.audio.play_3d("Steve", "moving", pos.x + 10, pos.y, pos.z, 1.0, 0.5)
+mc.audio.play3d(player, "moving", pos.x + 10, pos.y, pos.z, 1.0, 0.5)
 
 # Make sound source circle around player
 for i in range(60):
     angle = i * 0.1
     x = pos.x + 10 * math.cos(angle)
     z = pos.z + 10 * math.sin(angle)
-    mc._send(f"audio.position(Steve,moving,{x},{pos.y},{z})")
+    mc.audio.setPosition(player, "moving", x, pos.y, z)
     time.sleep(0.1)
 ```
 
 ---
 
-### `unload(target, audio_id)`
+### `unload(target, audioId)`
 
 **Function**: Unload audio, free memory
 
@@ -304,18 +365,23 @@ for i in range(60):
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
-| audio_id | str | Audio ID |
+| audioId | str | Audio ID |
 
-**Examples**:
+**Example**:
 ```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
 # Unload after use
-mc.audio.stop("Steve", "music")
-mc.audio.unload("Steve", "music")
+mc.audio.stop(player, "music")
+mc.audio.unload(player, "music")
 
 # Batch unload
-audio_ids = ["sound1", "sound2", "sound3"]
-for aid in audio_ids:
-    mc.audio.unload("Steve", aid)
+audioIds = ["sound1", "sound2", "sound3"]
+for aid in audioIds:
+    mc.audio.unload(player, aid)
 ```
 
 ---
@@ -332,7 +398,7 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # Generate and play
-mc.audio.generate_tone(player, "beep", 440, 2.0)
+mc.audio.generateTone(player, "beep", 440, 2.0)
 time.sleep(1.0)
 mc.audio.play(player, "beep")
 time.sleep(2.5)
@@ -351,7 +417,7 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # Load WAV file
-mc.audio.load_wav(player, "bgm", "music.wav")
+mc.audio.loadWav(player, "bgm", "music.wav")
 time.sleep(2.0)
 
 # Loop playback
@@ -362,7 +428,7 @@ time.sleep(30)
 
 # Fade out
 for v in [0.5, 0.4, 0.3, 0.2, 0.1, 0.0]:
-    mc.audio.set_volume(player, "bgm", v)
+    mc.audio.setVolume(player, "bgm", v)
     time.sleep(0.3)
 
 mc.audio.stop(player, "bgm")
@@ -382,12 +448,12 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # Generate sound effect
-mc.audio.generate_tone(player, "alert", 600, 3.0)
+mc.audio.generateTone(player, "alert", 600, 3.0)
 time.sleep(1.0)
 
 # Play 10 blocks in front of player
 front = pos.forward(10)
-mc.audio.play_3d(player, "alert", front.x, front.y, front.z, 1.0, 1.0)
+mc.audio.play3d(player, "alert", front.x, front.y, front.z, 1.0, 1.0)
 
 mc.postToChat("Turn around to feel the 3D effect!")
 time.sleep(4)
@@ -409,13 +475,13 @@ player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
 # Generate long audio
-mc.audio.generate_tone(player, "surround", 500, 15.0)
+mc.audio.generateTone(player, "surround", 500, 15.0)
 time.sleep(1.5)
 
 # Start playback
-mc.audio.play_3d(player, "surround", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
+mc.audio.play3d(player, "surround", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
 
-mc.postToChat("Sound is circling around you!")
+mc.postToChat("Sound circling around you!")
 
 # Circle around
 radius = 10
@@ -423,7 +489,7 @@ for i in range(80):
     angle = i * 0.12
     x = pos.x + radius * math.cos(angle)
     z = pos.z + radius * math.sin(angle)
-    mc._send(f"audio.position({player},surround,{x},{pos.y},{z})")
+    mc.audio.setPosition(player, "surround", x, pos.y, z)
     time.sleep(0.1)
 
 mc.audio.stop(player, "surround")
@@ -442,22 +508,22 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
 # C Major chord: C E G
-mc.audio.generate_tone(player, "c", 262, 3.0)
-mc.audio.generate_tone(player, "e", 330, 3.0)
-mc.audio.generate_tone(player, "g", 392, 3.0)
+mc.audio.generateTone(player, "noteC", 262, 3.0)
+mc.audio.generateTone(player, "noteE", 330, 3.0)
+mc.audio.generateTone(player, "noteG", 392, 3.0)
 time.sleep(1.5)
 
 mc.postToChat("C Major Chord!")
 
 # Play simultaneously
-mc.audio.play(player, "c", volume=0.6)
-mc.audio.play(player, "e", volume=0.6)
-mc.audio.play(player, "g", volume=0.6)
+mc.audio.play(player, "noteC", volume=0.6)
+mc.audio.play(player, "noteE", volume=0.6)
+mc.audio.play(player, "noteG", volume=0.6)
 
 time.sleep(4)
 
 # Cleanup
-for note in ["c", "e", "g"]:
+for note in ["noteC", "noteE", "noteG"]:
     mc.audio.unload(player, note)
 ```
 
@@ -473,21 +539,21 @@ mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 pos = mc.getPlayerPos(player)
 
-mc.audio.generate_tone(player, "approach", 440, 10.0)
+mc.audio.generateTone(player, "approach", 440, 10.0)
 time.sleep(1.0)
 
 # Start from far away
-start_dist = 50
-end_dist = 3
+startDist = 50
+endDist = 3
 
-mc.audio.play_3d(player, "approach", pos.x, pos.y, pos.z + start_dist, 1.0, 1.0)
+mc.audio.play3d(player, "approach", pos.x, pos.y, pos.z + startDist, 1.0, 1.0)
 
 mc.postToChat("Sound approaching...")
 
 # Approach
 for i in range(30):
-    dist = start_dist - (start_dist - end_dist) * (i / 30)
-    mc._send(f"audio.position({player},approach,{pos.x},{pos.y},{pos.z + dist})")
+    dist = startDist - (startDist - endDist) * (i / 30)
+    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
     time.sleep(0.1)
 
 mc.postToChat("Closest point!")
@@ -497,8 +563,8 @@ mc.postToChat("Sound moving away...")
 
 # Move away
 for i in range(30):
-    dist = end_dist + (start_dist - end_dist) * (i / 30)
-    mc._send(f"audio.position({player},approach,{pos.x},{pos.y},{pos.z + dist})")
+    dist = endDist + (startDist - endDist) * (i / 30)
+    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
     time.sleep(0.1)
 
 mc.audio.stop(player, "approach")
@@ -511,7 +577,7 @@ mc.audio.unload(player, "approach")
 
 1. **Loading Wait Time**: Audio loading takes time, larger files need longer wait
    ```python
-   mc.audio.generate_tone(player, "tone", 440, 5.0)
+   mc.audio.generateTone(player, "tone", 440, 5.0)
    time.sleep(1.0)  # Wait for loading
    mc.audio.play(player, "tone")
    ```
@@ -530,3 +596,41 @@ mc.audio.unload(player, "approach")
    - `"PlayerName"` - Specific player
    - `""` - First player
    - `"@a"` - All players
+
+---
+
+## 🔧 Quick Reference
+
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+# Generate tone
+mc.audio.generateTone(player, "id", frequency=440, duration=2.0)
+
+# Load WAV
+mc.audio.loadWav(player, "id", "file.wav")
+
+# Normal play
+mc.audio.play(player, "id", volume=1.0, loop=False)
+
+# 3D play
+mc.audio.play3d(player, "id", x, y, z, volume=1.0, rolloff=1.0)
+
+# Update position
+mc.audio.setPosition(player, "id", x, y, z)
+
+# Set volume
+mc.audio.setVolume(player, "id", 0.5)
+
+# Pause
+mc.audio.pause(player, "id")
+
+# Stop
+mc.audio.stop(player, "id")
+
+# Unload
+mc.audio.unload(player, "id")
+```
