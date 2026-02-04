@@ -30,9 +30,9 @@ mc.postToChat("§aHello, Minecraft! Python is here.")
 
 ## Classes
 
-### `Minecraft`
+### class `Minecraft`
 
-#### Basic
+#### Basic methods
 
 ##### `postToChat(msg)`
 Send a message to chat screen.
@@ -46,7 +46,7 @@ Ex: `mc.runCommand("time set day")`
 
 ---
 
-#### World
+#### World methods
 
 ##### `setBlock(x, y, z, block_id, dimension=None)`
 Set a block at the point given.
@@ -119,13 +119,13 @@ Modifies the NBT data of a block entity (Tile Entity).
 
 ---
 
-#### Audio
+#### Class audio
 
 ##### [Audio Doc](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio.MD)
 
 ---
 
-#### Info
+#### Info methods
 
 ##### `getOnlinePlayers()`
 Get players' name online.
@@ -161,7 +161,7 @@ Get player's details.
 
 ---
 
-#### State
+#### State methods
 
 ##### `setHealth(target, amount)`
 Set player's health.
@@ -199,7 +199,7 @@ Enable invulnerability.
 
 ---
 
-#### Inventory
+#### Inventory methods
 
 ##### `getInventory(target="")`
 Get player's inventory.
@@ -217,7 +217,7 @@ Clear inventory.
 
 ---
 
-#### TP
+#### TP methods
 
 ##### `teleport(x, y, z, target="")`
 TP player.
@@ -230,7 +230,7 @@ TP entity.
 
 ---
 
-#### Events
+#### Events methods
 
 ##### `pollBlockHits()`
 Get click events.
@@ -252,7 +252,7 @@ Get player message events.
 
 ---
 
-#### Helper Methods
+#### Helper methods
 
 ##### `getDirectionVector(target="")`
 Calculates the direction vector based on a player's rotation. Useful for shooting projectiles.
@@ -261,7 +261,7 @@ Calculates the direction vector based on a player's rotation. Useful for shootin
 
 ---
 
-### `Vec3`
+### class `Vec3`
 Represents a 3D vector/coordinate.
 *   **properties**: `x`,`y`,`z`.
 *   **Methods**:
@@ -269,7 +269,7 @@ Represents a 3D vector/coordinate.
 
 ---
 
-### `PlayerPos`
+### class `PlayerPos`
 **Inherits Vec3** Represents player position with rotation.
 *   **properties**: `x`,`y`,`z`,`yaw`,`pitch`.
 *   **Methods**:
