@@ -8,4 +8,4 @@ x, y, z = int(pos.x + 1), int(pos.y), int(pos.z)
 
 mc.setBlock(x, y, z, "oak_sign")
 
-mc.setSign(x, y, z, "§cMCAPIBridge", "Python", "Libary", "Exsample")
+mc.setSign(x, y, z, "§cMCAPIBridge", "Python", "Library", "Example")
