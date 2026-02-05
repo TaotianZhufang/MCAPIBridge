@@ -1,4 +1,4 @@
-# MCAPIBridge Python Libary
+# MCAPIBridge Python Library
 
 MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some ways to connect Minecraft with this mod in Python.
 
