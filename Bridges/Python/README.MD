@@ -7,7 +7,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest libary.Now version is 0.2.3.**
+**Please ensure you are using the latest libary.Now version is 0.3.0.**
 
 Use pip to install this.
 ```
@@ -122,6 +122,33 @@ Modifies the NBT data of a block entity (Tile Entity).
 #### Class audio
 
 ##### [Audio Doc](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio.MD)
+
+---
+
+#### Screen methods
+
+##### `Minecraft.updateScreen(screen_id, image_data)`
+Update the content of a Custom Screen block.
+*   **screen_id**: Int ID of the target screen (configured in-game via Stick).
+*   **image_data**: String Base64 encoded image data (JPG/PNG).
+
+##### `Minecraft.getScreenLocations(screen_id)`
+Get world coordinates for all screen blocks with the specified ID.
+*   **screen_id**: Int ID of the screen.
+*   **return**: List of `Vec3` objects representing the center coordinates of each screen group.
+
+##### `Minecraft.registerScreen(screen_id, x, y, z)`
+Manually register a screen location (used for programmatic screen creation).
+*   **screen_id**: Int ID of the screen.
+*   **x, y, z**: Double coordinates of the screen center.
+
+##### `Minecraft.createScreenWall(start_x, start_y, start_z, width, height, axis='x', screen_id=1)`
+Automatically build a screen wall and register it.
+*   **start_x, start_y, start_z**: Int starting coordinates.
+*   **width**: Int width of the screen (in blocks).
+*   **height**: Int height of the screen (in blocks).
+*   **axis**: String `'x'` (East-West wall) or `'z'` (North-South wall).
+*   **screen_id**: Int ID to assign to the screen.
 
 ---
 

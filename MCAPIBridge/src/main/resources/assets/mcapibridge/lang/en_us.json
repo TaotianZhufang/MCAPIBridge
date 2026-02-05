@@ -1,9 +1,24 @@
 ﻿{
+  "block.mcapibridge.screen": "Custom Screen",
+  "block.mcapibridge.screen.desc": "Displays images or videos controlled by scripts.",
   "mcapibridge.options.customAudioVolume": "MCAPIBridge Audio",
   "category.mcapibridge": "MCAPIBridge",
   "key.mcapibridge.macro1": "Macro Key 1",
   "key.mcapibridge.macro2": "Macro Key 2",
   "key.mcapibridge.macro3": "Macro Key 3",
   "key.mcapibridge.macro4": "Macro Key 4",
-  "key.mcapibridge.macro5": "Macro Key 5"
+  "key.mcapibridge.macro5": "Macro Key 5",
+
+  "mcapibridge.gui.title": "Screen Configuration",
+  "mcapibridge.gui.label.id": "Screen ID (Number):",
+  "mcapibridge.gui.input.id": "Screen ID",
+  "mcapibridge.gui.button.save": "Save & Apply",
+  "mcapibridge.gui.error.nan": "ID must be a number",
+
+  "mcapibridge.msg.welcome.1":"§bWelcome to MCAPIBridge !",
+  "mcapibridge.msg.welcome.2":"Use bridges(like Python) to control",
+  "mcapibridge.msg.welcome.3":"§aConnect to the server IP at the port 4711",
+
+  "mcapibridge.msg.config.success": "§aScreen Configured! Size: %dx%d ID: %d",
+  "mcapibridge.msg.config.error.shape": "§cError: Irregular shape! Detected %d blocks, expected %d."
 }

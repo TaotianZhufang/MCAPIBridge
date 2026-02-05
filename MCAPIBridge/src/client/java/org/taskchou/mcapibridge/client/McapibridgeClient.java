@@ -2,13 +2,19 @@ package org.taskchou.mcapibridge.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import org.taskchou.mcapibridge.Mcapibridge;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
+import org.taskchou.mcapibridge.client.gui.ScreenConfigScreen;
+import org.taskchou.mcapibridge.client.render.ScreenBlockRenderer;
+import org.taskchou.mcapibridge.payload.ScreenFramePayload;
+import org.taskchou.mcapibridge.payload.ScreenPayloads;
 
 public class McapibridgeClient implements ClientModInitializer {
 
@@ -24,6 +30,23 @@ public class McapibridgeClient implements ClientModInitializer {
             context.client().execute(() -> {
                 handleAudioPacket(payload.action(), payload.id(), payload.sampleRate(), payload.data());
             });
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(ScreenPayloads.OpenConfig.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                context.client().setScreen(new ScreenConfigScreen(payload.pos(), payload.currentId()));
+            });
+        });
+
+        BlockEntityRendererRegistry.register(Mcapibridge.SCREEN_BLOCK_ENTITY, ScreenBlockRenderer::new);
+
+        ClientPlayNetworking.registerGlobalReceiver(ScreenFramePayload.ID, (payload, context) -> {
+            ScreenTextureManager.updateTexture(payload.screenId(), payload.imageData());
+        });
+
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            System.out.println("[MCAPIBridge] Cleaning up audio...");
+            AudioPlayer.cleanup();
         });
 
         final boolean[] wasAttackPressed = {false};
@@ -116,6 +139,10 @@ public class McapibridgeClient implements ClientModInitializer {
                     float z = bytesToFloat(data, 8);
                     AudioPlayer.setPosition(id, x, y, z);
                 }
+            }
+            case "clone" -> {
+                String sourceId = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+                AudioPlayer.cloneAudio(id, sourceId);
             }
         }
     }

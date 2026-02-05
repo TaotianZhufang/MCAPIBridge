@@ -51,10 +51,19 @@
 *   **3D Spatial Audio**: Play sounds at specific world coordinates with realistic **distance attenuation**.
 *   **Dynamic Controls**: Real-time **volume adjustment**, **loop playback**, **pause/stop**, and **position updates** for moving sound sources.
 *   **Multi-Source Mixing**: Play multiple audio sources simultaneously (e.g., chords, ambient layers).
+*   **Audio Cloning**: Efficiently clone loaded audio data for low-latency multi-speaker setups.
 
-### 🖥️ Client-Side Rendering *(Coming Soon)*
-*   **HUD Overlay**: Draw custom text, rectangles, and progress bars on the player's screen.
-*   **3D World Drawing**: Render lines, boxes, and markers in the 3D world space.
+### 🖥️ Custom Screen System
+*   **Dynamic Web Screen**: A new custom block `mcapibridge:screen` that can display real-time images or video streams controlled by Python scripts.
+*   **Seamless Tiling**: Automatically merges adjacent screen blocks into a single large display, perfect for video walls or billboards.
+*   **High Performance**: Uses client-side texture rendering and JPG/PNG streaming for smooth 30 FPS playback.Recommend JPG streaming.
+*   **Interactive Configuration**: Right-click screen blocks with a stick to easily configure IDs and layout without commands.
+*   **Crafting Recipe**:
+    ```
+    G G G   (Glass Pane)
+    R D R   (Redstone, Glowstone Dust, Redstone)
+    I I I   (Iron Ingot)
+    ```
 
 ### 📦 Deep Data Access (NBT)
 *   **NBT Modification**: Directly write raw NBT data to **Entities** and **Block Entities**.
@@ -89,6 +98,16 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 📋 Update Log
 
+#### 2/6/2026 Alpha-0.4.0
+*   **Custom Screen System**: Introduced `mcapibridge:screen` block for displaying real-time images and video streams.
+    *   **Video Wall**: Supports seamless multi-block screen assembly with automatic layout detection.
+    *   **High-Res Streaming**: Capable of streaming 1080p/720p content at 30 FPS via JPG/PNG compression.
+    *   **Easy Config**: Right-click with a stick to open a GUI for setting Screen IDs.
+*   **Audio Optimization**: Added `audio.clone` command to efficiently replicate audio sources for multi-speaker setups (e.g., surround sound cinemas) without re-uploading data.
+*   **Bugs fixed**:
+    *   Fix audio on play3d witch can't set volume to 0 automatically.
+    *   Fix socket can still keep connected with bridges sometimes.
+
 #### 2/4/2026 Alpha-0.3.1
 *   **Audio Settings Integration**: Added native "MCAPIBridge Audio" volume slider in Minecraft's Sound Options menu.
 
@@ -116,4 +135,4 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 🗺️ Roadmap
 
-*   **More Language Bridges**: C#,C/C++,Arduino for ESP32,Micropython for ESP32 libraries.
+*   **More Language Bridges**: C#, C/C++, Arduino for ESP32, Micropython for ESP32 libraries.

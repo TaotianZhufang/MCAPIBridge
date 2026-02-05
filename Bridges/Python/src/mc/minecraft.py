@@ -94,6 +94,9 @@ class AudioManager:
     def setPosition(self, target, audioId, x, y, z):
         self.mc._send(f"audio.position({target},{audioId},{x},{y},{z})")
 
+    def clone(self, target, source_id, new_id):
+        self.mc._send(f"audio.clone({target},{source_id},{new_id})")
+
 class Vec3:
     def __init__(self, x, y, z):
         self.x, self.y, self.z = x, y, z
@@ -447,3 +450,56 @@ class Minecraft:
         if dimension: cmd += f",{dimension}"
         self._send(cmd)
 
+    def updateScreen(self, screen_id, image_data):
+        self._send(f"screen.update(@a,{screen_id},{image_data})")
+
+    def getScreenLocations(self, screen_id):
+        self._send(f"screen.getPos({screen_id})")
+        resp = self._recv()
+        if not resp or "ERROR" in resp: return []
+        
+        locations = []
+        try:
+            for part in resp.split("|"):
+                c = part.split(",")
+                if len(c) == 3:
+                    locations.append(Vec3(float(c[0]), float(c[1]), float(c[2])))
+        except: pass
+        return locations
+
+    def registerScreen(self, screen_id, x, y, z):
+        self._send(f"screen.register({screen_id},{x},{y},{z})")
+        
+    def createScreenWall(self, start_x, start_y, start_z, width, height, axis='x', screen_id=1):
+        print(f"Building {width}x{height} screen (ID {screen_id})...")
+        
+        facing = 'south' if axis == 'x' else 'east'
+        
+        for gy in range(height):
+            for gx in range(width):
+                y = start_y + gy
+                
+                if axis == 'x':
+                    x = start_x + gx
+                    z = start_z
+                else:
+                    x = start_x
+                    z = start_z + (width - 1 - gx)
+                
+                self.setBlock(x, y, z, f"mcapibridge:screen[facing={facing}]")
+                
+                nbt = f'{{ScreenId:{screen_id},W:{width},H:{height},GX:{gx},GY:{gy}}}'
+                self.setBlockNbt(x, y, z, nbt)
+                
+        
+        if axis == 'x':
+            cx = start_x + width / 2.0
+            cy = start_y + height / 2.0
+            cz = start_z + 0.5 + 0.5
+        else:
+            cx = start_x + 0.5 + 0.5
+            cy = start_y + height / 2.0
+            cz = start_z + width / 2.0
+            
+        self.registerScreen(screen_id, cx, cy, cz)
+        print(f"Screen registered at ({cx:.1f}, {cy:.1f}, {cz:.1f})")

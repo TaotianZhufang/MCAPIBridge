@@ -18,6 +18,7 @@ public class AudioPlayer {
     private static final ConcurrentHashMap<String, LoadingBuffer> loadingBuffers = new ConcurrentHashMap<>();
 
     private static MinecraftClient clientInstance = null;
+    private static float listenerX, listenerY, listenerZ;
 
     private static class LoadingBuffer {
         int sampleRate;
@@ -31,6 +32,10 @@ public class AudioPlayer {
         public boolean playing = false;
         public boolean streaming = false;
         public float baseVolume = 1.0f;
+
+        public boolean is3D = false;
+        public float x, y, z;
+        public float maxDistance = 100.0f;
 
         public AudioSource(int sampleRate) {
             this.sourceId = AL10.alGenSources();
@@ -183,6 +188,7 @@ public class AudioPlayer {
     public static void play(String id, float volume, boolean loop) {
         AudioSource source = sources.get(id);
         if (source == null) return;
+        source.is3D = false;
 
         source.baseVolume = volume;
         float finalVolume = volume * getVolumeMultiplier();
@@ -200,6 +206,13 @@ public class AudioPlayer {
         if (source == null) return;
 
         source.baseVolume = volume;
+
+        source.is3D = true;
+        source.x = x;
+        source.y = y;
+        source.z = z;
+        source.maxDistance = 100.0f;
+
         float finalVolume = volume * getVolumeMultiplier();
 
         AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
@@ -207,7 +220,9 @@ public class AudioPlayer {
         AL10.alSource3f(source.sourceId, AL10.AL_POSITION, x, y, z);
         AL10.alSourcef(source.sourceId, AL10.AL_ROLLOFF_FACTOR, rolloff);
         AL10.alSourcef(source.sourceId, AL10.AL_REFERENCE_DISTANCE, 5.0f);
-        AL10.alSourcef(source.sourceId, AL10.AL_MAX_DISTANCE, 100.0f);
+
+        AL10.alSourcef(source.sourceId, AL10.AL_MAX_DISTANCE, 99999.0f);
+
         AL10.alSourcei(source.sourceId, AL10.AL_LOOPING, loop && !source.streaming ? AL10.AL_TRUE : AL10.AL_FALSE);
 
         AL10.alSourcePlay(source.sourceId);
@@ -250,11 +265,18 @@ public class AudioPlayer {
     public static void setPosition(String id, float x, float y, float z) {
         AudioSource source = sources.get(id);
         if (source != null) {
+            source.x = x;
+            source.y = y;
+            source.z = z;
             AL10.alSource3f(source.sourceId, AL10.AL_POSITION, x, y, z);
         }
     }
 
     public static void updateListener(float x, float y, float z, float yaw, float pitch) {
+        listenerX = x;
+        listenerY = y;
+        listenerZ = z;
+
         AL10.alListener3f(AL10.AL_POSITION, x, y, z);
 
         float yawRad = (float) Math.toRadians(yaw);
@@ -274,6 +296,15 @@ public class AudioPlayer {
         for (AudioSource source : sources.values()) {
             if (source.playing) {
                 float finalVolume = source.baseVolume * volumeMultiplier;
+                if (source.is3D) {
+                    double distSq = (source.x - listenerX) * (source.x - listenerX) +
+                            (source.y - listenerY) * (source.y - listenerY) +
+                            (source.z - listenerZ) * (source.z - listenerZ);
+
+                    if (distSq > source.maxDistance * source.maxDistance) {
+                        finalVolume = 0.0f;
+                    }
+                }
                 AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
             }
 
@@ -293,5 +324,32 @@ public class AudioPlayer {
         for (String id : sources.keySet()) {
             unload(id);
         }
+    }
+
+    public static void cloneAudio(String newId, String sourceId) {
+        AudioSource src = sources.get(sourceId);
+        if (src == null) {
+            System.out.println("[Audio] Clone failed: source " + sourceId + " not found");
+            return;
+        }
+
+
+        AudioSource newSource = new AudioSource(src.sampleRate);
+        newSource.baseVolume = src.baseVolume;
+
+        for (Integer bufferId : src.bufferQueue) {
+            if (AL10.alIsBuffer(bufferId)) {
+                AL10.alSourceQueueBuffers(newSource.sourceId, bufferId);
+                newSource.bufferQueue.add(bufferId);
+            }
+        }
+
+        int error = AL10.alGetError();
+        if (error != AL10.AL_NO_ERROR) {
+            System.out.println("[Audio] OpenAL Error in clone: " + error);
+        }
+
+        sources.put(newId, newSource);
+        System.out.println("[Audio] Cloned: " + sourceId + " -> " + newId);
     }
 }

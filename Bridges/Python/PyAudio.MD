@@ -142,6 +142,38 @@ mc.audio.loadRaw(player, "custom", pcmData, sampleRate)
 
 ---
 
+### `clone(target, source_id, new_id)`
+
+**Function**: Clone an existing audio source (reuses memory buffer)
+
+**Parameters**:
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| target | str | Player name, `""` for first player, `"@a"` for all |
+| source_id | str | ID of the existing audio source to clone from |
+| new_id | str | New ID for the cloned instance |
+
+**Example**:
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+# Load audio once
+mc.audio.generateTone(player, "master_beep", 440, 2.0)
+
+# Clone it for multi-source playback
+mc.audio.clone(player, "master_beep", "beep_left")
+mc.audio.clone(player, "master_beep", "beep_right")
+
+# Play clones at different locations
+mc.audio.play3d(player, "beep_left", 100, 64, 200, 1.0, 1.0)
+mc.audio.play3d(player, "beep_right", 110, 64, 200, 1.0, 1.0)
+```
+
+---
+
 ## ▶️ Playback Control Functions
 
 ### `play(target, audioId, volume, loop)`

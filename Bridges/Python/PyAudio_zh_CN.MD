@@ -142,6 +142,38 @@ mc.audio.loadRaw(player, "custom", pcmData, sampleRate)
 
 ---
 
+### `clone(target, source_id, new_id)`
+
+**功能**: 克隆现有的音频源（复用内存缓冲区，节省资源）
+
+**参数**:
+| 参数 | 类型 | 说明 |
+|-----------|------|-------------|
+| target | str | 玩家名，`""` 代表第一个玩家，`"@a"` 代表所有玩家 |
+| source_id | str | 要克隆的现有音频源 ID |
+| new_id | str | 新克隆实例的 ID |
+
+**示例**:
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+# 加载一次音频作为母本
+mc.audio.generateTone(player, "master_beep", 440, 2.0)
+
+# 克隆出多个实例用于多点播放
+mc.audio.clone(player, "master_beep", "beep_left")
+mc.audio.clone(player, "master_beep", "beep_right")
+
+# 在不同位置播放克隆体
+mc.audio.play3d(player, "beep_left", 100, 64, 200, 1.0, 1.0)
+mc.audio.play3d(player, "beep_right", 110, 64, 200, 1.0, 1.0)
+```
+
+---
+
 ## ▶️ 播放控制函数
 
 ### `play(target, audioId, volume, loop)`

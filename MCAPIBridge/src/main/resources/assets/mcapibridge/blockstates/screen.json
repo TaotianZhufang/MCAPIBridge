@@ -1,0 +1,8 @@
+﻿{
+  "variants": {
+    "facing=north": { "model": "mcapibridge:block/screen" },
+    "facing=south": { "model": "mcapibridge:block/screen", "y": 180 },
+    "facing=west":  { "model": "mcapibridge:block/screen", "y": 270 },
+    "facing=east":  { "model": "mcapibridge:block/screen", "y": 90 }
+  }
+}

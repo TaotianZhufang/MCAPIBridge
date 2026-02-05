@@ -6,11 +6,16 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.MapIdComponent;
@@ -20,8 +25,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.RegistryByteBuf;
@@ -31,6 +35,7 @@ import net.minecraft.network.packet.s2c.play.MapUpdateS2CPacket;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -39,6 +44,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.state.property.Property;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -54,21 +60,21 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.item.FilledMapItem;
 import net.minecraft.item.map.MapState;
+import org.taskchou.mcapibridge.block.ScreenBlock;
+import org.taskchou.mcapibridge.block.ScreenBlockEntity;
+import org.taskchou.mcapibridge.item.ScreenBlockItem;
+import org.taskchou.mcapibridge.payload.ScreenFramePayload;
+import org.taskchou.mcapibridge.payload.ScreenPayloads;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.nio.charset.StandardCharsets;
-import java.io.OutputStreamWriter;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Mcapibridge implements ModInitializer {
@@ -79,11 +85,15 @@ public class Mcapibridge implements ModInitializer {
     public static final java.util.Map<Integer, byte[]> customMapData = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, byte[]> pendingAudioData = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, AudioBuffer> audioBuffers = new java.util.concurrent.ConcurrentHashMap<>();
+    public static final List<BridgeClientHandler> activeHandlers = new CopyOnWriteArrayList<>();
     private static class AudioBuffer {
         String target;
         int sampleRate;
         java.io.ByteArrayOutputStream data = new java.io.ByteArrayOutputStream();
     }
+    public static final Map<Integer, Vec3d> SCREEN_LOCATIONS = new ConcurrentHashMap<>();
+    public static final Block SCREEN_BLOCK = new ScreenBlock(FabricBlockSettings.create().strength(1.0f).luminance(15));
+    public static BlockEntityType<ScreenBlockEntity> SCREEN_BLOCK_ENTITY;
 
     public record ClickPayload(int action) implements CustomPayload {
         public static final CustomPayload.Id<ClickPayload> ID = new CustomPayload.Id<>(CLICK_PACKET_ID);
@@ -130,7 +140,46 @@ public class Mcapibridge implements ModInitializer {
 
         PayloadTypeRegistry.playC2S().register(ClickPayload.ID, ClickPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(AudioDataPayload.ID, AudioDataPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(ScreenPayloads.OpenConfig.ID, ScreenPayloads.OpenConfig.CODEC);
+        PayloadTypeRegistry.playC2S().register(ScreenPayloads.SetId.ID, ScreenPayloads.SetId.CODEC);
+        PayloadTypeRegistry.playS2C().register(ScreenFramePayload.ID, ScreenFramePayload.CODEC);
 
+        Registry.register(Registries.BLOCK, new Identifier("mcapibridge", "screen"), SCREEN_BLOCK);
+        Item screenItem = Registry.register(Registries.ITEM, new Identifier("mcapibridge", "screen"), new ScreenBlockItem(SCREEN_BLOCK, new Item.Settings()));
+
+        SCREEN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE,
+                new Identifier("mcapibridge", "screen_block_entity"),
+                FabricBlockEntityTypeBuilder.create(ScreenBlockEntity::new, SCREEN_BLOCK).build()
+        );
+
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(content -> {
+            content.add(screenItem);
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(ScreenPayloads.SetId.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            BlockPos pos = payload.pos();
+            int newId = payload.newId();
+
+            context.server().execute(() -> {
+                if (player.squaredDistanceTo(pos.toCenterPos()) > 64.0) return;
+
+                ServerWorld world = (ServerWorld) player.getWorld();
+                BlockState state = world.getBlockState(pos);
+
+                if (state.getBlock() instanceof ScreenBlock screenBlock) {
+                    screenBlock.configureScreen(world, pos, player, state.get(ScreenBlock.FACING), newId);
+                }
+            });
+        });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            if (server.getPlayerManager().getPlayerList().isEmpty()) {
+                for (BridgeClientHandler h : BridgeSocketServer.activeHandlers) {
+                    h.close();
+                }
+            }
+        });
 
         ServerPlayNetworking.registerGlobalReceiver(ClickPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
@@ -158,22 +207,33 @@ public class Mcapibridge implements ModInitializer {
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            System.out.println("[MCAPI] Server Starting...");
+            if (serverThread != null) serverThread.stopServer();
+
             serverThread = new BridgeSocketServer(server);
             serverThread.start();
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            if (serverThread != null) serverThread.stopServer();
+            System.out.println("[MCAPI] Server Stopping... Closing sockets.");
+
+            if (serverThread != null) {
+                serverThread.stopServer();
+            }
+            for (BridgeClientHandler handler : BridgeSocketServer.activeHandlers) {
+                handler.close();
+            }
+            BridgeSocketServer.activeHandlers.clear();
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
 
             player.sendMessage(Text.of("§e========================================"));
-            player.sendMessage(Text.of("§bWelcome to MCAPIBridge !"));
+            player.sendMessage(Text.translatable("mcapibridge.msg.welcome.1"));
             //player.sendMessage(Text.of("§7Your ID : §a" + player.getId()));
-            player.sendMessage(Text.of("Use bridges(like Python) to control"));
-            player.sendMessage(Text.of("§aConnect to the server IP at the port 4711"));
+            player.sendMessage(Text.translatable("mcapibridge.msg.welcome.2"));
+            player.sendMessage(Text.translatable("mcapibridge.msg.welcome.3"));
             player.sendMessage(Text.of("§e========================================"));
             new Thread(() -> {
                 try {
@@ -279,23 +339,46 @@ public class Mcapibridge implements ModInitializer {
         public final Queue<String> eventQueue = new ConcurrentLinkedQueue<>();
         public final Queue<String> chatQueue = new ConcurrentLinkedQueue<>();
 
+        @Override
         public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-                 PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true)) {
+            try {
+                socket.setSoTimeout(1000);
 
-                String line;
-                while ((line = in.readLine()) != null) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+
+                while (true) {
+                    if (!mcServer.isRunning()) {
+                        break;
+                    }
+
                     try {
+                        String line = in.readLine();
+                        if (line == null) break;
+
                         String res = handleCommand(line.trim());
                         if (res != null) out.println(res);
-                    } catch (Exception e) {
-                        out.println("Error: Processing failed");
+
+                    } catch (java.net.SocketTimeoutException e) {
+                        continue;
                     }
                 }
             } catch (Exception e) {
-                // System.out.println("Lost connection");
+                // e.printStackTrace();
             } finally {
-                Mcapibridge.activeClients.remove(this);
+                try { socket.close(); } catch (Exception ignored) {}
+                BridgeSocketServer.activeHandlers.remove(this);
+            }
+        }
+
+        public void close() {
+            try {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                    System.out.println("[MCAPI] Client disconnected by server shutdown.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 
@@ -348,32 +431,76 @@ public class Mcapibridge implements ModInitializer {
                     case "audio.volume": return audioVolume(args);
                     case "audio.position": return audioPosition(args);
                     case "audio.finishLoad": return audioFinishLoad(args);
+                    case "screen.update": return screenUpdate(args);
+                    case "screen.getPos": return getScreenPos(args);
+                    case "screen.register": return registerScreen(args);
+                    case "audio.clone": return audioClone(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
         }
 
         private String setBlock(String[] args) {
-            // args: x, y, z, blockName, [optional: target/dimension]
+            // args: x, y, z, blockName, [optional: dimension]
             final int x = Integer.parseInt(args[0]);
             final int y = Integer.parseInt(args[1]);
             final int z = Integer.parseInt(args[2]);
-            String name = args[3].trim();
-            if (!name.contains(":")) name = "minecraft:" + name;
-            final String finalName = name;
+            String input = args[3].trim();
+
+            String blockId;
+            Map<String, String> properties = new HashMap<>();
+
+            if (input.contains("[")) {
+                int bracketIndex = input.indexOf("[");
+                blockId = input.substring(0, bracketIndex);
+                String propStr = input.substring(bracketIndex + 1, input.length() - 1); // 去掉 [ ]
+
+                for (String p : propStr.split(",")) {
+                    String[] kv = p.split("=");
+                    if (kv.length == 2) {
+                        properties.put(kv[0].trim(), kv[1].trim());
+                    }
+                }
+            } else {
+                blockId = input;
+            }
+
+            if (!blockId.contains(":")) blockId = "minecraft:" + blockId;
+            final String finalId = blockId;
+            final Map<String, String> finalProps = properties;
 
             final String[] finalArgs = args;
 
             mcServer.execute(() -> {
                 ServerWorld world = resolveWorld(finalArgs, 4);
 
-                Identifier id = new Identifier(finalName);
+                Identifier id = new Identifier(finalId);
                 Block block = Registries.BLOCK.get(id);
-                if (block != Blocks.AIR || finalName.equals("minecraft:air")) {
-                    world.setBlockState(new BlockPos(x, y, z), block.getDefaultState());
+
+                if (block != Blocks.AIR || finalId.equals("minecraft:air")) {
+                    BlockState state = block.getDefaultState();
+
+                    if (!finalProps.isEmpty()) {
+                        for (Property<?> prop : state.getProperties()) {
+                            String propName = prop.getName();
+                            if (finalProps.containsKey(propName)) {
+                                state = applyProperty(state, prop, finalProps.get(propName));
+                            }
+                        }
+                    }
+
+                    world.setBlockState(new BlockPos(x, y, z), state);
                 }
             });
             return null;
+        }
+
+        private <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, String valueStr) {
+            Optional<T> parsedValue = property.parse(valueStr);
+            if (parsedValue.isPresent()) {
+                return state.with(property, parsedValue.get());
+            }
+            return state;
         }
 
         private ServerWorld resolveWorld(String[] args, int index) {
@@ -1268,6 +1395,111 @@ public class Mcapibridge implements ModInitializer {
             return null;
         }
 
+        private String screenUpdate(String[] args) {
+            String target = args[0];
+            int screenId = Integer.parseInt(args[1]);
+            String base64 = args[2];
+            byte[] imgData = java.util.Base64.getDecoder().decode(base64);
+
+            mcServer.execute(() -> {
+                ScreenFramePayload packet = new ScreenFramePayload(screenId, imgData);
+                if (target.equals("@a")) {
+                    for (ServerPlayerEntity p : mcServer.getPlayerManager().getPlayerList()) {
+                        ServerPlayNetworking.send(p, packet);
+                    }
+                } else {
+                    ServerPlayerEntity p = findPlayer(target);
+                    if (p != null) ServerPlayNetworking.send(p, packet);
+                }
+            });
+            return null;
+        }
+
+        private String getScreenPos(String[] args) {
+            try {
+                int id = Integer.parseInt(args[0]);
+                ScreenDataState state = ScreenDataState.getServerState(mcServer);
+                List<Vec3d> allBlocks = state.getScreens(id);
+
+                if (allBlocks == null || allBlocks.isEmpty()) return "ERROR";
+
+                List<Vec3d> centers = new ArrayList<>();
+                List<List<Vec3d>> clusters = new ArrayList<>();
+
+                for (Vec3d pos : allBlocks) {
+                    boolean added = false;
+                    for (List<Vec3d> cluster : clusters) {
+                        if (cluster.get(0).squaredDistanceTo(pos) < 256.0) {
+                            cluster.add(pos);
+                            added = true;
+                            break;
+                        }
+                    }
+                    if (!added) {
+                        List<Vec3d> newCluster = new ArrayList<>();
+                        newCluster.add(pos);
+                        clusters.add(newCluster);
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+                for (List<Vec3d> cluster : clusters) {
+                    double sumX = 0, sumY = 0, sumZ = 0;
+                    for (Vec3d p : cluster) {
+                        sumX += p.x;
+                        sumY += p.y;
+                        sumZ += p.z;
+                    }
+                    if (sb.length() > 0) sb.append("|");
+                    sb.append(String.format(java.util.Locale.US, "%.2f,%.2f,%.2f",
+                            sumX / cluster.size(),
+                            sumY / cluster.size(),
+                            sumZ / cluster.size()
+                    ));
+                }
+
+                return sb.toString();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "ERROR";
+        }
+
+        private String registerScreen(String[] args) {
+            try {
+                int id = Integer.parseInt(args[0]);
+                double x = Double.parseDouble(args[1]);
+                double y = Double.parseDouble(args[2]);
+                double z = Double.parseDouble(args[3]);
+
+                mcServer.execute(() -> {
+                    ScreenDataState state = ScreenDataState.getServerState(mcServer);
+                    state.addScreen(id, new Vec3d(x, y, z));
+                });
+            } catch (Exception e) {}
+            return null;
+        }
+
+        private String audioClone(String[] args) {
+            String target = args[0];
+            String sourceId = args[1];
+            String newId = args[2];
+
+            byte[] data = sourceId.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+            mcServer.execute(() -> {
+                if (target.equals("@a")) {
+                    for (ServerPlayerEntity p : mcServer.getPlayerManager().getPlayerList()) {
+                        ServerPlayNetworking.send(p, new AudioDataPayload("clone", newId, 0, data));
+                    }
+                } else {
+                    ServerPlayerEntity p = findPlayer(target);
+                    if (p != null) ServerPlayNetworking.send(p, new AudioDataPayload("clone", newId, 0, data));
+                }
+            });
+            return null;
+        }
 
 
 
