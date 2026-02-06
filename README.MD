@@ -57,7 +57,7 @@
 *   **Dynamic Web Screen**: A new custom block `mcapibridge:screen` that can display real-time images or video streams controlled by scripts.
 *   **Seamless Tiling**: Automatically merges adjacent screen blocks into a single large display, perfect for video walls or billboards.
 *   **High Performance**: Uses client-side texture rendering and JPG/PNG streaming for smooth 30 FPS playback.Recommend JPG streaming.
-*   **Interactive Configuration**: Right-click screen blocks with a stick to easily configure IDs and layout without commands.
+*   **Interactive Configuration**: Right-click screen blocks with to easily configure IDs and layout without commands.
 *   **Crafting Recipe**:
     ```
     G G G   (Glass Pane)
@@ -102,7 +102,7 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 *   **Custom Screen System**: Introduced `mcapibridge:screen` block for displaying real-time images and video streams.
     *   **Video Wall**: Supports seamless multi-block screen assembly with automatic layout detection.
     *   **High-Res Streaming**: Capable of streaming 1080p/720p content at 30 FPS via JPG/PNG compression.
-    *   **Easy Config**: Right-click with a stick to open a GUI for setting Screen IDs.
+    *   **Easy Config**: Right-click to open a GUI for setting Screen IDs.
 *   **Audio Optimization**: Added `audio.clone` command to efficiently replicate audio sources for multi-speaker setups (e.g., surround sound cinemas) without re-uploading data.
 *   **Bugs fixed**:
     *   Fix audio on play3d witch can't set volume to 0 automatically.
