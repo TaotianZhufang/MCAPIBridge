@@ -54,7 +54,7 @@
 *   **Audio Cloning**: Efficiently clone loaded audio data for low-latency multi-speaker setups.
 
 ### 🖥️ Custom Screen System
-*   **Dynamic Web Screen**: A new custom block `mcapibridge:screen` that can display real-time images or video streams controlled by Python scripts.
+*   **Dynamic Web Screen**: A new custom block `mcapibridge:screen` that can display real-time images or video streams controlled by scripts.
 *   **Seamless Tiling**: Automatically merges adjacent screen blocks into a single large display, perfect for video walls or billboards.
 *   **High Performance**: Uses client-side texture rendering and JPG/PNG streaming for smooth 30 FPS playback.Recommend JPG streaming.
 *   **Interactive Configuration**: Right-click screen blocks with a stick to easily configure IDs and layout without commands.
