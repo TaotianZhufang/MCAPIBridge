@@ -17,6 +17,16 @@ if not mc.getOnlinePlayers(): exit()
 
 print(f"📡 Pushing info board to Screen ID {SCREEN_ID}...")
 
+# Load fonts (fallback to default if not found)
+try:
+    font_title = ImageFont.truetype("arial.ttf", 40)
+    font_time = ImageFont.truetype("arial.ttf", 80)
+    font_info = ImageFont.truetype("arial.ttf", 20)
+except:
+    font_title = ImageFont.load_default()
+    font_time = ImageFont.load_default()
+    font_info = ImageFont.load_default()
+
 try:
     while True:
         start = time.time()
@@ -32,16 +42,6 @@ try:
         draw.rectangle([10, 10, WIDTH-10, 60], fill=(0, 100, 100))
 
         # 3. Draw Text
-        # Load fonts (fallback to default if not found)
-        try:
-            font_title = ImageFont.truetype("arial.ttf", 40)
-            font_time = ImageFont.truetype("arial.ttf", 80)
-            font_info = ImageFont.truetype("arial.ttf", 20)
-        except:
-            font_title = ImageFont.load_default()
-            font_time = ImageFont.load_default()
-            font_info = ImageFont.load_default()
-
         # Title
         draw.text((WIDTH//2, 35), "SERVER NOTICE", font=font_title, fill="white", anchor="mm")
 
@@ -61,7 +61,8 @@ try:
         mc.updateScreen(SCREEN_ID, b64)
 
         # 6. FPS Control (1 FPS is enough for clock)
-        time.sleep(1.0 - (time.time() - start))
+        # Use max to prevent sleep error if rendering takes too long
+        time.sleep(max(0.01, 1.0 - (time.time() - start)))
 
 except KeyboardInterrupt:
     print("Stopped.")

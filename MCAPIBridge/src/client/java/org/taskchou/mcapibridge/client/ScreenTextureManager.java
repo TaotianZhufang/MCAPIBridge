@@ -23,15 +23,30 @@ public class ScreenTextureManager {
 
     private static final ConcurrentHashMap<Integer, NativeImageBackedTexture> textureCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Identifier> idCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Long> lastFrameTime = new ConcurrentHashMap<>();
 
-    private static final ExecutorService decoder = Executors.newSingleThreadExecutor();
+    private static final ExecutorService decoderExecutor = Executors.newSingleThreadExecutor();
+    private static final long MAX_LATENCY = 500;
 
     public static Identifier getTexture(int screenId) {
         return idCache.get(screenId);
     }
 
-    public static void updateTexture(int screenId, byte[] data) {
-        decoder.submit(() -> {
+    public static void updateTexture(int screenId, byte[] data, long serverTimestamp) {
+        long clientNow = System.currentTimeMillis();
+
+        if (clientNow - serverTimestamp > MAX_LATENCY) {
+            //System.out.println("Dropped laggy frame: " + (clientNow - serverTimestamp) + "ms");
+            return;
+        }
+
+        long last = lastFrameTime.getOrDefault(screenId, 0L);
+        if (serverTimestamp < last) {
+            return;
+        }
+        lastFrameTime.put(screenId, serverTimestamp);
+
+        decoderExecutor.submit(() -> {
             try {
                 NativeImage newImage = decodeImage(data);
                 if (newImage == null) return;

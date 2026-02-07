@@ -5,6 +5,16 @@ import base64
 import wave
 import struct
 
+class ScreenLocation:
+    def __init__(self, x, y, z, dimension="minecraft:overworld"):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.dimension = dimension
+    
+    def __repr__(self):
+        return f"Loc({self.x:.1f}, {self.y:.1f}, {self.z:.1f}, {self.dimension})"
+
 class AudioManager:
     def __init__(self, mc):
         self.mc = mc
@@ -28,7 +38,9 @@ class AudioManager:
             samples = [(s - 128) * 256 for s in samples]
             frames = struct.pack(f'<{len(samples)}h', *samples)
         
-        b64_data = base64.b64encode(frames).decode('ascii')
+        b64_data = base64.b64encode(frames).decode('ascii').replace('\n', '')
+        if "\n" in b64_data:
+            print("⚠️ 警告：Base64 含\\n！")
         
         chunk_size = 40000  
         for i in range(0, len(b64_data), chunk_size):
@@ -37,7 +49,7 @@ class AudioManager:
                 self.mc._send(f"audio.load({target},{audioId},{sample_rate},{chunk})")
             else:
                 self.mc._send(f"audio.stream({target},{audioId},{sample_rate},{chunk})")
-            time.sleep(0.02)
+            time.sleep(0.001)
         
         self.mc._send(f"audio.finishLoad({target},{audioId})")
         print(f"[Audio] Loaded {filepath}: {len(frames)} bytes, {sample_rate}Hz")
@@ -72,8 +84,9 @@ class AudioManager:
         loopStr = "true" if loop else "false"
         self.mc._send(f"audio.play({target},{audioId},{volume},{loopStr})")
     
-    def play3d(self, target, audioId, x, y, z, volume=1.0, rolloff=1.0):
-        self.mc._send(f"audio.play3d({target},{audioId},{x},{y},{z},{volume},{rolloff})")
+    def play3d(self, target, audioId, x, y, z, volume=1.0, rolloff=1.0, loop=False, dimension="", offset=0.0):
+        loopStr = "true" if loop else "false"
+        self.mc._send(f"audio.play3d({target},{audioId},{x},{y},{z},{volume},{rolloff},{loopStr},{dimension},{offset})")
     
     def playAt(self, audioId, x, y, z, radius=32, volume=1.0):
         self.mc._send(f"audio.playAt({audioId},{x},{y},{z},{radius},{volume})")
@@ -96,6 +109,16 @@ class AudioManager:
 
     def clone(self, target, source_id, new_id):
         self.mc._send(f"audio.clone({target},{source_id},{new_id})")
+
+    def reset(self):
+        self.mc._send("audio.reset(@a)")
+
+    def playOnScreen(self, audioId, screenId, volume=1.0, loop=False):
+        loopStr = "true" if loop else "false"
+        self.mc._send(f"audio.playScreen(@a,{audioId},{screenId},{volume},{loopStr})")
+
+    def syncProgress(self, audioId, progress):
+        self.mc._send(f"audio.syncProgress(@a,{audioId},{progress})")
 
 class Vec3:
     def __init__(self, x, y, z):
@@ -456,29 +479,33 @@ class Minecraft:
     def getScreenLocations(self, screen_id):
         self._send(f"screen.getPos({screen_id})")
         resp = self._recv()
+        
         if not resp or "ERROR" in resp: return []
         
         locations = []
         try:
+            # Format: x,y,z,dim|x,y,z,dim
             for part in resp.split("|"):
                 c = part.split(",")
-                if len(c) == 3:
-                    locations.append(Vec3(float(c[0]), float(c[1]), float(c[2])))
+                if len(c) >= 4:
+                    locations.append(ScreenLocation(float(c[0]), float(c[1]), float(c[2]), c[3]))
+                elif len(c) == 3:
+                    # Backward compatibility
+                    locations.append(ScreenLocation(float(c[0]), float(c[1]), float(c[2])))
         except: pass
+        
         return locations
 
-    def registerScreen(self, screen_id, x, y, z):
-        self._send(f"screen.register({screen_id},{x},{y},{z})")
+    def registerScreen(self, screen_id, x, y, z, dimension=""):
+        self._send(f"screen.register({screen_id},{x},{y},{z},{dimension})")
         
-    def createScreenWall(self, start_x, start_y, start_z, width, height, axis='x', screen_id=1):
+    def createScreenWall(self, start_x, start_y, start_z, width, height, axis='x', screen_id=1, dimension=""):
         print(f"Building {width}x{height} screen (ID {screen_id})...")
-        
         facing = 'south' if axis == 'x' else 'east'
         
         for gy in range(height):
             for gx in range(width):
                 y = start_y + gy
-                
                 if axis == 'x':
                     x = start_x + gx
                     z = start_z
@@ -487,19 +514,14 @@ class Minecraft:
                     z = start_z + (width - 1 - gx)
                 
                 self.setBlock(x, y, z, f"mcapibridge:screen[facing={facing}]")
-                
                 nbt = f'{{ScreenId:{screen_id},W:{width},H:{height},GX:{gx},GY:{gy}}}'
                 self.setBlockNbt(x, y, z, nbt)
-                
         
         if axis == 'x':
-            cx = start_x + width / 2.0
-            cy = start_y + height / 2.0
-            cz = start_z + 0.5 + 0.5
+            cx, cy, cz = start_x + width / 2.0, start_y + height / 2.0, start_z + 0.5 + 0.5
         else:
-            cx = start_x + 0.5 + 0.5
-            cy = start_y + height / 2.0
-            cz = start_z + width / 2.0
+            cx, cy, cz = start_x + 0.5 + 0.5, start_y + height / 2.0, start_z + width / 2.0
             
-        self.registerScreen(screen_id, cx, cy, cz)
+        self.registerScreen(screen_id, cx, cy, cz, dimension)
+        print(f"Screen registered at ({cx:.1f}, {cy:.1f}, {cz:.1f}) in {dimension}")
         print(f"Screen registered at ({cx:.1f}, {cy:.1f}, {cz:.1f})")

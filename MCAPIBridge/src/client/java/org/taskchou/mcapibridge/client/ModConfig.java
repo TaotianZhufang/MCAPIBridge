@@ -15,6 +15,7 @@ public class ModConfig {
     private static ModConfig INSTANCE;
 
     public float customAudioVolume = 1.0f;
+    public float audioSyncOffset = 0.0f;
 
     public static ModConfig get() {
         if (INSTANCE == null) {

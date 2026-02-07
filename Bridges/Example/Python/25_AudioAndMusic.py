@@ -1,6 +1,7 @@
 """
 MCAPIBridge Audio Feature Demo
 Demonstrates all audio capabilities of the MCAPIBridge API.
+Updated for Alpha-0.4.1 (Clone & Dimension Support)
 """
 
 from mc import Minecraft
@@ -33,6 +34,10 @@ def section(title):
     chat(f"§b§l{title}")
     chat("§a" + "=" * 35)
     time.sleep(1)
+
+# Reset audio system first
+mc.audio.reset()
+time.sleep(0.5)
 
 # ============================================================
 # START DEMO
@@ -140,7 +145,7 @@ if os.path.exists(WAV_FILE):
     chat("§7Playing in front of you...")
     chat("§d§lTurn around to feel it!")
     front = pos.forward(10)
-    mc.audio.play3d(player, "music3d", front.x, front.y, front.z, 1.0, 0.5)
+    mc.audio.play3d(player, "music3d", front.x, front.y, front.z, 1.0, 0.5,dimension=player)
     time.sleep(5.0)
     
     mc.audio.stop(player, "music3d")
@@ -151,30 +156,35 @@ else:
 time.sleep(1)
 
 # ============================================================
-# 6. WAV SURROUND
+# 6. WAV SURROUND (CLONING DEMO)
 # ============================================================
 
-section("6. WAV Surround")
+section("6. WAV Surround (Clone)")
 
 if os.path.exists(WAV_FILE):
     pos = mc.getPlayerPos(player)
     
-    chat("§7Loading WAV for surround...")
-    mc.audio.loadWav(player, "surroundWav", WAV_FILE)
+    chat("§7Loading Master Audio...")
+    mc.audio.loadWav(player, "surroundMaster", WAV_FILE)
     time.sleep(2.0)
     
-    chat("§d§lSound circling around you!")
-    mc.audio.play3d(player, "surroundWav", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
+    chat("§d§lSound circling (using Clones)!")
+    
+    # Clone it to use as a moving source
+    mc.audio.clone(player, "surroundMaster", "surroundMover")
+    
+    mc.audio.play3d(player, "surroundMover", pos.x + 10, pos.y, pos.z, 1.0, 0.3,dimension=player)
     
     for i in range(40):
         angle = i * 0.2
         x = pos.x + 10 * math.cos(angle)
         z = pos.z + 10 * math.sin(angle)
-        mc.audio.setPosition(player, "surroundWav", x, pos.y, z)
+        mc.audio.setPosition(player, "surroundMover", x, pos.y, z)
         time.sleep(0.15)
     
-    mc.audio.stop(player, "surroundWav")
-    mc.audio.unload(player, "surroundWav")
+    mc.audio.stop(player, "surroundMover")
+    mc.audio.unload(player, "surroundMover") # Unload clone
+    mc.audio.unload(player, "surroundMaster") # Unload master
 else:
     chat("§7Skipping (no WAV file)")
 
@@ -195,13 +205,13 @@ chat("§7Playing 10 blocks ahead...")
 chat("§d§lTurn around to feel it!")
 
 front = pos.forward(10)
-mc.audio.play3d(player, "frontTone", front.x, front.y, front.z, 1.0, 1.0)
+mc.audio.play3d(player, "frontTone", front.x, front.y, front.z, 1.0, 1.0,dimension=player)
 time.sleep(4.5)
 
 mc.audio.unload(player, "frontTone")
 
 # ============================================================
-# 8. LEFT/RIGHT CHANNELS
+# 8. LEFT/RIGHT CHANNELS (CLONE OPTIMIZATION)
 # ============================================================
 
 section("8. Left/Right Channels")
@@ -209,9 +219,14 @@ section("8. Left/Right Channels")
 pos = mc.getPlayerPos(player)
 yawRad = math.radians(pos.yaw)
 
-mc.audio.generateTone(player, "leftTone", 400, 2.0)
-mc.audio.generateTone(player, "rightTone", 600, 2.0)
+# Generate ONCE, Clone TWICE
+mc.audio.generateTone(player, "tone400", 400, 2.0)
+mc.audio.generateTone(player, "tone600", 600, 2.0)
 time.sleep(1.0)
+
+# Clone for L/R
+mc.audio.clone(player, "tone400", "leftTone")
+mc.audio.clone(player, "tone600", "rightTone")
 
 leftX = pos.x + 8 * math.sin(yawRad + math.pi/2)
 leftZ = pos.z - 8 * math.cos(yawRad + math.pi/2)
@@ -220,53 +235,31 @@ rightX = pos.x + 8 * math.sin(yawRad - math.pi/2)
 rightZ = pos.z - 8 * math.cos(yawRad - math.pi/2)
 
 chat("§b← Left (400Hz)")
-mc.audio.play3d(player, "leftTone", leftX, pos.y, leftZ, 1.0, 0.5)
+mc.audio.play3d(player, "leftTone", leftX, pos.y, leftZ, 1.0, 0.5,dimension=player)
 time.sleep(1.5)
 
 chat("§c→ Right (600Hz)")
-mc.audio.play3d(player, "rightTone", rightX, pos.y, rightZ, 1.0, 0.5)
+mc.audio.play3d(player, "rightTone", rightX, pos.y, rightZ, 1.0, 0.5,dimension=player)
 time.sleep(2.5)
 
+# Unload clones and masters
 mc.audio.unload(player, "leftTone")
 mc.audio.unload(player, "rightTone")
+mc.audio.unload(player, "tone400")
+mc.audio.unload(player, "tone600")
 
 # ============================================================
-# 9. SURROUND SOUND (TONE)
+# 9. DISTANCE ATTENUATION
 # ============================================================
 
-section("9. Surround Sound (Tone)")
-
-pos = mc.getPlayerPos(player)
-
-mc.audio.generateTone(player, "surroundTone", 500, 12.0)
-time.sleep(1.5)
-
-chat("§d§lSound circling around you!")
-mc.audio.play3d(player, "surroundTone", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
-
-radius = 10
-for i in range(50):
-    angle = i * 0.15
-    x = pos.x + radius * math.cos(angle)
-    z = pos.z + radius * math.sin(angle)
-    mc.audio.setPosition(player, "surroundTone", x, pos.y, z)
-    time.sleep(0.1)
-
-mc.audio.stop(player, "surroundTone")
-mc.audio.unload(player, "surroundTone")
-
-# ============================================================
-# 10. DISTANCE ATTENUATION
-# ============================================================
-
-section("10. Distance Attenuation")
+section("9. Distance Attenuation")
 
 pos = mc.getPlayerPos(player)
 
 mc.audio.generateTone(player, "distTone", 440, 10.0)
 time.sleep(1.0)
 
-mc.audio.play3d(player, "distTone", pos.x, pos.y, pos.z + 40, 1.0, 1.0)
+mc.audio.play3d(player, "distTone", pos.x, pos.y, pos.z + 40, 1.0, 1.0,dimension=player)
 
 chat("§a▶ Approaching...")
 for i in range(20):
@@ -287,11 +280,12 @@ mc.audio.stop(player, "distTone")
 mc.audio.unload(player, "distTone")
 
 # ============================================================
-# 11. CHORD (MULTI-SOURCE)
+# 10. CHORD (MULTI-SOURCE)
 # ============================================================
 
-section("11. Chord (Multi-Source)")
+section("10. Chord (Multi-Source)")
 
+# Generate single notes
 mc.audio.generateTone(player, "noteC", 262, 3.0)
 mc.audio.generateTone(player, "noteE", 330, 3.0)
 mc.audio.generateTone(player, "noteG", 392, 3.0)
@@ -299,6 +293,7 @@ time.sleep(1.5)
 
 chat("§eC Major Chord!")
 
+# Play simultaneously
 mc.audio.play(player, "noteC", volume=0.6)
 mc.audio.play(player, "noteE", volume=0.6)
 mc.audio.play(player, "noteG", volume=0.6)
@@ -319,10 +314,9 @@ chat("§f  2. Volume control")
 chat("§f  3. Loop playback")
 chat("§f  4. Custom WAV file")
 chat("§f  5. WAV 3D spatial")
-chat("§f  6. WAV surround")
+chat("§f  6. WAV surround (Clone)")
 chat("§f  7. 3D spatial (tone)")
-chat("§f  8. Left/Right channels")
-chat("§f  9. Surround sound")
-chat("§f 10. Distance attenuation")
-chat("§f 11. Multi-source chord")
+chat("§f  8. Left/Right channels (Clone)")
+chat("§f  9. Distance attenuation")
+chat("§f 10. Multi-source chord")
 chat("§a" + "=" * 35)

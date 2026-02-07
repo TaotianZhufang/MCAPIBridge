@@ -1,5 +1,6 @@
 package org.taskchou.mcapibridge.client.mixin;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.SoundOptionsScreen;
 import net.minecraft.client.gui.widget.OptionListWidget;
@@ -36,9 +37,27 @@ public abstract class SoundOptionsScreenMixin extends Screen {
                         (double) ModConfig.get().customAudioVolume,
                         value -> ModConfig.get().setCustomAudioVolume(value.floatValue())
                 );
+                SimpleOption<Double> syncOption = new SimpleOption<>(
+                        "mcapibridge.options.audioSync",
+                        SimpleOption.emptyTooltip(),
+                        (text, value) -> {
+                            double offset = (value - 0.5) * 10.0; // 映射到 -5 ~ +5
+                            String sign = offset > 0 ? "+" : "";
+                            return Text.literal(String.format("%s: %s%.2fs", text.getString(), sign, offset));
+                        },
+                        SimpleOption.DoubleSliderCallbacks.INSTANCE,
+                        (double) (ModConfig.get().audioSyncOffset / 10.0f + 0.5f),
+                        value -> {
+                            float offset = (float) ((value - 0.5) * 10.0);
+                            ModConfig.get().audioSyncOffset = offset;
+                            ModConfig.get().save();
+                        }
+                );
 
                 optionList.addSingleOptionEntry(customAudioOption);
+                optionList.addSingleOptionEntry(syncOption);
             }
         });
+
     }
 }

@@ -90,6 +90,7 @@ public class ScreenBlock extends BlockWithEntity {
         connected.add(startPos);
         queue.add(startPos);
 
+
         while (!queue.isEmpty() && connected.size() < 2000) {
             BlockPos curr = queue.poll();
 
@@ -164,10 +165,49 @@ public class ScreenBlock extends BlockWithEntity {
         }
 
         if (!world.isClient && world.getServer() != null) {
+            String dimId = world.getRegistryKey().getValue().toString();
             ScreenDataState state = ScreenDataState.getServerState(world.getServer());
-            state.addScreen(screenId, new Vec3d(centerX, centerY, centerZ));
+            state.addScreen(screenId, new Vec3d(centerX, centerY, centerZ), dimId);
         }
         player.sendMessage(Text.translatable("mcapibridge.msg.config.success", w, h, screenId), true);
 
+    }
+    @Override
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (state.isOf(newState.getBlock())) {
+            return;
+        }
+
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof ScreenBlockEntity screenBe) {
+            int screenId = screenBe.screenId;
+
+            if (!world.isClient && world.getServer() != null) {
+                ScreenDataState data = ScreenDataState.getServerState(world.getServer());
+
+                List<ScreenDataState.ScreenLocation> locs = data.getScreens(screenId);
+
+                Iterator<ScreenDataState.ScreenLocation> it = locs.iterator();
+                while (it.hasNext()) {
+                    ScreenDataState.ScreenLocation loc = it.next();
+
+                    double distSq = (loc.x - (pos.getX() + 0.5)) * (loc.x - (pos.getX() + 0.5)) +
+                            (loc.y - (pos.getY() + 0.5)) * (loc.y - (pos.getY() + 0.5)) +
+                            (loc.z - (pos.getZ() + 0.5)) * (loc.z - (pos.getZ() + 0.5));
+
+                    if (loc.dimension.equals(world.getRegistryKey().getValue().toString()) && distSq < 4.0) {
+                        it.remove();
+                        data.markDirty();
+                        System.out.println("Screen " + screenId + " removed at " + pos);
+                    }
+                }
+
+                if (locs.isEmpty()) {
+                    data.removeScreen(screenId);
+                }
+            }
+        }
+
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 }

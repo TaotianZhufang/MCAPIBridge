@@ -9,9 +9,14 @@ import time
 
 # Config
 SCREEN_ID = 1
-W, H = 1280, 720 # Canvas size
+# Canvas size: Match your Minecraft screen aspect ratio
+# 1280x720 is good for large screens, 480x270 for small ones
+W, H = 1280, 720 
 
 mc = Minecraft()
+if not mc.getOnlinePlayers(): 
+    print("❌ Not connected to Minecraft")
+    exit()
 
 # Create white canvas
 canvas = np.ones((H, W, 3), dtype=np.uint8) * 255
@@ -27,8 +32,8 @@ def draw_event(event, x, y, flags, param):
         last_point = (x, y)
     elif event == cv2.EVENT_MOUSEMOVE:
         if drawing:
-            # Draw line (Black, thickness 2)
-            cv2.line(canvas, last_point, (x, y), (0, 0, 0), 2)
+            # Draw line (Black, thickness 5 for visibility on large screens)
+            cv2.line(canvas, last_point, (x, y), (0, 0, 0), 5)
             last_point = (x, y)
     elif event == cv2.EVENT_LBUTTONUP:
         drawing = False
@@ -45,12 +50,16 @@ try:
         # Show local window
         cv2.imshow("MC Whiteboard", canvas)
         
-        # Encode & Send (JPG Quality 50 for low latency)
-        _, buf = cv2.imencode('.jpg', canvas, [cv2.IMWRITE_JPEG_QUALITY, 50])
+        # Encode & Send 
+        # JPG is better for continuous streaming. Quality 70 is a good balance.
+        _, buf = cv2.imencode('.jpg', canvas, [cv2.IMWRITE_JPEG_QUALITY, 70])
         b64 = base64.b64encode(buf).decode()
+        
+        # Send to all players
         mc.updateScreen(SCREEN_ID, b64)
         
-        key = cv2.waitKey(33) & 0xFF # ~30 FPS
+        # ~30 FPS (33ms)
+        key = cv2.waitKey(33) & 0xFF 
         if key == ord('q'):
             break
         elif key == ord('c'):

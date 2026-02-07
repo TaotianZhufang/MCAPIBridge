@@ -20,5 +20,6 @@
   "mcapibridge.msg.welcome.3":"§a连接到服务端IP，端口为4711",
 
   "mcapibridge.msg.config.success": "§a屏幕配置成功！尺寸: §a%d§ax%d§a ID: %d",
-  "mcapibridge.msg.config.error.shape": "§c配置失败：形状不规则 (检测到 §c%d§c，需要 §c%d)"
+  "mcapibridge.msg.config.error.shape": "§c配置失败：形状不规则 (检测到 §c%d§c，需要 §c%d)",
+  "mcapibridge.options.audioSync": "音频同步延迟"
 }

@@ -1,6 +1,6 @@
 # MCAPIBridge Audio System Documentation
 
-#### English|[简体中文](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio_zh_CN.MD)
+#### English | [简体中文](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Python/PyAudio_zh_CN.MD)
 
 ## 📚 AudioManager Class
 
@@ -15,17 +15,17 @@ mc = Minecraft()
 
 ---
 
-## 🎵 Audio Loading Functions
+## 🎵 Audio Loading & Management
 
 ### `generateTone(target, audioId, frequency, duration, sampleRate)`
 
-**Function**: Generate a sine wave tone
+**Function**: Generate a sine wave tone and upload it to the client.
 
 **Parameters**:
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | target | str | Player name, `""` for first player, `"@a"` for all players | Required |
-| audioId | str | Unique audio identifier | Required |
+| audioId | str | Unique audio identifier (custom name) | Required |
 | frequency | float | Frequency in Hz | 440 |
 | duration | float | Duration in seconds | 1.0 |
 | sampleRate | int | Sample rate | 44100 |
@@ -63,22 +63,20 @@ mc.audio.generateTone("", "tone", 440, 1.0)
 | C5 | 523 |
 | A5 | 880 |
 
----
-
 ### `loadWav(target, audioId, filepath)`
 
-**Function**: Load a WAV audio file
+**Function**: Load a local WAV audio file to the client.
 
 **Parameters**:
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | target | str | Player name |
 | audioId | str | Unique audio identifier |
-| filepath | str | Path to WAV file |
+| filepath | str | Path to local WAV file |
 
 **Supported Formats**:
 - 8-bit or 16-bit PCM
-- Mono or Stereo (auto-converts to mono)
+- Mono or Stereo (auto-converts to mono for 3D spatialization)
 - Any sample rate
 
 **Example**:
@@ -99,14 +97,12 @@ mc.audio.loadWav("@a", "victory", "sounds/win.wav")
 ```
 
 **Notes**:
-- Large files are automatically chunked for transmission
-- Wait before playing after loading (recommended: `time.sleep(1.0)`)
-
----
+- Large files are automatically chunked for transmission.
+- Wait before playing after loading (recommended: `time.sleep(1.0)` or more for large files).
 
 ### `loadRaw(target, audioId, pcmData, sampleRate)`
 
-**Function**: Load raw PCM audio data
+**Function**: Load raw PCM audio data (bytes).
 
 **Parameters**:
 | Parameter | Type | Description | Default |
@@ -140,18 +136,16 @@ pcmData = struct.pack(f'<{len(samples)}h', *samples)
 mc.audio.loadRaw(player, "custom", pcmData, sampleRate)
 ```
 
----
+### `clone(target, sourceId, newId)`
 
-### `clone(target, source_id, new_id)`
-
-**Function**: Clone an existing audio source (reuses memory buffer)
+**Function**: Clone an existing audio source. This reuses the memory buffer of the source, saving bandwidth and RAM. Essential for multi-speaker setups.
 
 **Parameters**:
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| target | str | Player name, `""` for first player, `"@a"` for all |
-| source_id | str | ID of the existing audio source to clone from |
-| new_id | str | New ID for the cloned instance |
+| target | str | Player name |
+| sourceId | str | ID of the existing loaded audio |
+| newId | str | ID for the new instance |
 
 **Example**:
 ```python
@@ -172,13 +166,40 @@ mc.audio.play3d(player, "beep_left", 100, 64, 200, 1.0, 1.0)
 mc.audio.play3d(player, "beep_right", 110, 64, 200, 1.0, 1.0)
 ```
 
+### `unload(target, audioId)`
+
+**Function**: Unload audio and free memory.
+
+**Parameters**:
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| target | str | Player name |
+| audioId | str | Audio ID |
+
+**Example**:
+```python
+from mc import Minecraft
+
+mc = Minecraft()
+player = mc.getOnlinePlayers()[0]["name"]
+
+# Unload after use
+mc.audio.stop(player, "music")
+mc.audio.unload(player, "music")
+
+# Batch unload
+audioIds = ["sound1", "sound2", "sound3"]
+for aid in audioIds:
+    mc.audio.unload(player, aid)
+```
+
 ---
 
 ## ▶️ Playback Control Functions
 
 ### `play(target, audioId, volume, loop)`
 
-**Function**: Normal playback (no 3D effect)
+**Function**: Normal 2D playback (no spatial effects, follows player). Used for BGM or UI sounds.
 
 **Parameters**:
 | Parameter | Type | Description | Default |
@@ -214,11 +235,9 @@ time.sleep(3)
 mc.audio.stop(player, "beep")
 ```
 
----
+### `play3d(target, audioId, x, y, z, volume, rolloff, loop, dimension, offset)`
 
-### `play3d(target, audioId, x, y, z, volume, rolloff)`
-
-**Function**: 3D spatial audio playback
+**Function**: 3D spatial audio playback at a fixed location.
 
 **Parameters**:
 | Parameter | Type | Description | Default |
@@ -228,13 +247,16 @@ mc.audio.stop(player, "beep")
 | x, y, z | float | Sound source world coordinates | Required |
 | volume | float | Volume (0.0 - 1.0) | 1.0 |
 | rolloff | float | Distance attenuation factor | 1.0 |
+| loop | bool | Whether to loop | False |
+| dimension | str | Dimension ID (e.g. `minecraft:the_nether`). `""` = auto. | `""` |
+| offset | float | Start playback from N seconds | 0.0 |
 
 **Rolloff Parameter**:
 | Value | Effect |
 |-------|--------|
-| 0.5 | Slow attenuation, audible from far away |
+| 0.5 | Slow attenuation (audible from far) |
 | 1.0 | Normal attenuation |
-| 2.0 | Fast attenuation, only audible nearby |
+| 2.0 | Fast attenuation (only audible nearby) |
 
 **Example**:
 ```python
@@ -264,17 +286,9 @@ mc.audio.play3d(player, "ambient", x, y, z, 1.0, 0.3)
 mc.audio.play3d(player, "whisper", x, y, z, 1.0, 2.0)
 ```
 
----
-
 ### `pause(target, audioId)`
 
-**Function**: Pause playback
-
-**Parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| target | str | Player name |
-| audioId | str | Audio ID |
+**Function**: Pause playback.
 
 **Example**:
 ```python
@@ -295,17 +309,9 @@ time.sleep(2)
 mc.audio.play(player, "music")
 ```
 
----
-
 ### `stop(target, audioId)`
 
-**Function**: Stop playback
-
-**Parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| target | str | Player name |
-| audioId | str | Audio ID |
+**Function**: Stop playback (resets progress).
 
 **Example**:
 ```python
@@ -328,7 +334,7 @@ mc.audio.stop(player, "music")
 
 ### `setVolume(target, audioId, volume)`
 
-**Function**: Dynamically adjust volume
+**Function**: Dynamically adjust volume of a playing audio.
 
 **Parameters**:
 | Parameter | Type | Description |
@@ -353,11 +359,9 @@ for v in [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]:
     time.sleep(0.5)
 ```
 
----
-
 ### `setPosition(target, audioId, x, y, z)`
 
-**Function**: Update 3D sound source position (for moving sources)
+**Function**: Update 3D sound source position (for moving sound sources).
 
 **Parameters**:
 | Parameter | Type | Description |
@@ -387,247 +391,28 @@ for i in range(60):
     time.sleep(0.1)
 ```
 
----
+### `syncProgress(audioId, progress)`
 
-### `unload(target, audioId)`
-
-**Function**: Unload audio, free memory
+**Function**: Manually sync the server-side playback timer. Useful for long videos to correct audio drift.
 
 **Parameters**:
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| target | str | Player name |
 | audioId | str | Audio ID |
-
-**Example**:
-```python
-from mc import Minecraft
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-
-# Unload after use
-mc.audio.stop(player, "music")
-mc.audio.unload(player, "music")
-
-# Batch unload
-audioIds = ["sound1", "sound2", "sound3"]
-for aid in audioIds:
-    mc.audio.unload(player, aid)
-```
-
----
-
-## 📖 Complete Usage Examples
-
-### Example 1: Simple Sound Effect
-
-```python
-from mc import Minecraft
-import time
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-
-# Generate and play
-mc.audio.generateTone(player, "beep", 440, 2.0)
-time.sleep(1.0)
-mc.audio.play(player, "beep")
-time.sleep(2.5)
-mc.audio.unload(player, "beep")
-```
-
----
-
-### Example 2: Background Music
-
-```python
-from mc import Minecraft
-import time
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-
-# Load WAV file
-mc.audio.loadWav(player, "bgm", "music.wav")
-time.sleep(2.0)
-
-# Loop playback
-mc.audio.play(player, "bgm", volume=0.6, loop=True)
-
-# Play for 30 seconds
-time.sleep(30)
-
-# Fade out
-for v in [0.5, 0.4, 0.3, 0.2, 0.1, 0.0]:
-    mc.audio.setVolume(player, "bgm", v)
-    time.sleep(0.3)
-
-mc.audio.stop(player, "bgm")
-mc.audio.unload(player, "bgm")
-```
-
----
-
-### Example 3: 3D Sound Effect
-
-```python
-from mc import Minecraft
-import time
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-pos = mc.getPlayerPos(player)
-
-# Generate sound effect
-mc.audio.generateTone(player, "alert", 600, 3.0)
-time.sleep(1.0)
-
-# Play 10 blocks in front of player
-front = pos.forward(10)
-mc.audio.play3d(player, "alert", front.x, front.y, front.z, 1.0, 1.0)
-
-mc.postToChat("Turn around to feel the 3D effect!")
-time.sleep(4)
-
-mc.audio.unload(player, "alert")
-```
-
----
-
-### Example 4: Surround Sound Effect
-
-```python
-from mc import Minecraft
-import time
-import math
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-pos = mc.getPlayerPos(player)
-
-# Generate long audio
-mc.audio.generateTone(player, "surround", 500, 15.0)
-time.sleep(1.5)
-
-# Start playback
-mc.audio.play3d(player, "surround", pos.x + 10, pos.y, pos.z, 1.0, 0.3)
-
-mc.postToChat("Sound circling around you!")
-
-# Circle around
-radius = 10
-for i in range(80):
-    angle = i * 0.12
-    x = pos.x + radius * math.cos(angle)
-    z = pos.z + radius * math.sin(angle)
-    mc.audio.setPosition(player, "surround", x, pos.y, z)
-    time.sleep(0.1)
-
-mc.audio.stop(player, "surround")
-mc.audio.unload(player, "surround")
-```
-
----
-
-### Example 5: Multi-Source Chord
-
-```python
-from mc import Minecraft
-import time
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-
-# C Major chord: C E G
-mc.audio.generateTone(player, "noteC", 262, 3.0)
-mc.audio.generateTone(player, "noteE", 330, 3.0)
-mc.audio.generateTone(player, "noteG", 392, 3.0)
-time.sleep(1.5)
-
-mc.postToChat("C Major Chord!")
-
-# Play simultaneously
-mc.audio.play(player, "noteC", volume=0.6)
-mc.audio.play(player, "noteE", volume=0.6)
-mc.audio.play(player, "noteG", volume=0.6)
-
-time.sleep(4)
-
-# Cleanup
-for note in ["noteC", "noteE", "noteG"]:
-    mc.audio.unload(player, note)
-```
-
----
-
-### Example 6: Distance Attenuation Effect
-
-```python
-from mc import Minecraft
-import time
-
-mc = Minecraft()
-player = mc.getOnlinePlayers()[0]["name"]
-pos = mc.getPlayerPos(player)
-
-mc.audio.generateTone(player, "approach", 440, 10.0)
-time.sleep(1.0)
-
-# Start from far away
-startDist = 50
-endDist = 3
-
-mc.audio.play3d(player, "approach", pos.x, pos.y, pos.z + startDist, 1.0, 1.0)
-
-mc.postToChat("Sound approaching...")
-
-# Approach
-for i in range(30):
-    dist = startDist - (startDist - endDist) * (i / 30)
-    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
-    time.sleep(0.1)
-
-mc.postToChat("Closest point!")
-time.sleep(1)
-
-mc.postToChat("Sound moving away...")
-
-# Move away
-for i in range(30):
-    dist = endDist + (startDist - endDist) * (i / 30)
-    mc.audio.setPosition(player, "approach", pos.x, pos.y, pos.z + dist)
-    time.sleep(0.1)
-
-mc.audio.stop(player, "approach")
-mc.audio.unload(player, "approach")
-```
+| progress | float | Current timestamp in seconds |
 
 ---
 
 ## ⚠️ Important Notes
 
-1. **Loading Wait Time**: Audio loading takes time, larger files need longer wait
-   ```python
-   mc.audio.generateTone(player, "tone", 440, 5.0)
-   time.sleep(1.0)  # Wait for loading
-   mc.audio.play(player, "tone")
-   ```
-
-2. **Resource Release**: Remember to `unload` after use
-   ```python
-   mc.audio.stop(player, "sound")
-   mc.audio.unload(player, "sound")
-   ```
-
-3. **Unique Audio ID**: Same ID will overwrite previous audio
-
-4. **WAV Format**: Only PCM format supported, compressed WAV not supported
-
-5. **Target Parameter**:
-   - `"PlayerName"` - Specific player
-   - `""` - First player
-   - `"@a"` - All players
+1.  **Loading Wait Time**: Audio loading takes time (network transfer). For large files (>5MB), use `time.sleep(2.0)` or more before calling `play` or `clone`.
+2.  **Resource Release**: Always `unload` audio IDs when they are no longer needed to free up client RAM.
+3.  **Unique Audio ID**: Using an existing ID will overwrite the previous audio data associated with it.
+4.  **WAV Format**: The library supports PCM WAV. Compressed WAVs are not supported directly.
+5.  **Target Parameter**:
+    *   `"PlayerName"` - Specific player.
+    *   `""` - First player in the list.
+    *   `"@a"` - All online players.
 
 ---
 
@@ -639,30 +424,23 @@ from mc import Minecraft
 mc = Minecraft()
 player = mc.getOnlinePlayers()[0]["name"]
 
-# Generate tone
+# 1. Generate/Load
 mc.audio.generateTone(player, "id", frequency=440, duration=2.0)
-
-# Load WAV
+# OR
 mc.audio.loadWav(player, "id", "file.wav")
 
-# Normal play
+# 2. Play
+# 2D BGM
 mc.audio.play(player, "id", volume=1.0, loop=False)
-
-# 3D play
+# 3D Positional
 mc.audio.play3d(player, "id", x, y, z, volume=1.0, rolloff=1.0)
 
-# Update position
-mc.audio.setPosition(player, "id", x, y, z)
-
-# Set volume
+# 3. Control
 mc.audio.setVolume(player, "id", 0.5)
-
-# Pause
+mc.audio.setPosition(player, "id", new_x, new_y, new_z)
 mc.audio.pause(player, "id")
-
-# Stop
 mc.audio.stop(player, "id")
 
-# Unload
+# 4. Cleanup
 mc.audio.unload(player, "id")
 ```

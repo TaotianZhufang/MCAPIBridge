@@ -13,7 +13,19 @@ import java.util.*;
 
 public class ScreenDataState extends PersistentState {
 
-    public final Map<Integer, List<Vec3d>> screens = new HashMap<>();
+    public static class ScreenLocation {
+        public double x, y, z;
+        public String dimension;
+
+        public ScreenLocation(double x, double y, double z, String dimension) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.dimension = dimension;
+        }
+    }
+
+    public final Map<Integer, List<ScreenLocation>> screens = new HashMap<>();
 
     public static final Type<ScreenDataState> TYPE = new Type<>(
             ScreenDataState::new,
@@ -26,18 +38,24 @@ public class ScreenDataState extends PersistentState {
                 .getOrCreate(TYPE, "mcapibridge_screens");
     }
 
-    public void addScreen(int id, Vec3d pos) {
-        List<Vec3d> list = screens.computeIfAbsent(id, k -> new ArrayList<>());
+    public void addScreen(int id, Vec3d pos, String dimension) {
+        List<ScreenLocation> list = screens.computeIfAbsent(id, k -> new ArrayList<>());
 
-        for (Vec3d existing : list) {
-            if (existing.squaredDistanceTo(pos) < 1.0) return;
+        for (ScreenLocation existing : list) {
+            if (!existing.dimension.equals(dimension)) continue;
+
+            double distSq = (existing.x - pos.x)*(existing.x - pos.x) +
+                    (existing.y - pos.y)*(existing.y - pos.y) +
+                    (existing.z - pos.z)*(existing.z - pos.z);
+
+            if (distSq < 1.0) return;
         }
 
-        list.add(pos);
+        list.add(new ScreenLocation(pos.x, pos.y, pos.z, dimension));
         markDirty();
     }
 
-    public List<Vec3d> getScreens(int id) {
+    public List<ScreenLocation> getScreens(int id) {
         return screens.getOrDefault(id, Collections.emptyList());
     }
 
@@ -51,23 +69,21 @@ public class ScreenDataState extends PersistentState {
     @Override
     public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         NbtList rootList = new NbtList();
-
-        screens.forEach((id, positions) -> {
+        screens.forEach((id, locations) -> {
             NbtCompound idTag = new NbtCompound();
             idTag.putInt("id", id);
-
             NbtList posList = new NbtList();
-            for (Vec3d pos : positions) {
+            for (ScreenLocation loc : locations) {
                 NbtCompound p = new NbtCompound();
-                p.putDouble("x", pos.x);
-                p.putDouble("y", pos.y);
-                p.putDouble("z", pos.z);
+                p.putDouble("x", loc.x);
+                p.putDouble("y", loc.y);
+                p.putDouble("z", loc.z);
+                p.putString("dim", loc.dimension);
                 posList.add(p);
             }
             idTag.put("positions", posList);
             rootList.add(idTag);
         });
-
         nbt.put("screens", rootList);
         return nbt;
     }
@@ -75,19 +91,17 @@ public class ScreenDataState extends PersistentState {
     public static ScreenDataState fromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         ScreenDataState state = new ScreenDataState();
         NbtList rootList = nbt.getList("screens", NbtElement.COMPOUND_TYPE);
-
         for (int i = 0; i < rootList.size(); i++) {
             NbtCompound idTag = rootList.getCompound(i);
             int id = idTag.getInt("id");
-
             NbtList posList = idTag.getList("positions", NbtElement.COMPOUND_TYPE);
-            List<Vec3d> positions = new ArrayList<>();
-
+            List<ScreenLocation> locations = new ArrayList<>();
             for (int j = 0; j < posList.size(); j++) {
                 NbtCompound p = posList.getCompound(j);
-                positions.add(new Vec3d(p.getDouble("x"), p.getDouble("y"), p.getDouble("z")));
+                String dim = p.contains("dim") ? p.getString("dim") : "minecraft:overworld";
+                locations.add(new ScreenLocation(p.getDouble("x"), p.getDouble("y"), p.getDouble("z"), dim));
             }
-            state.screens.put(id, positions);
+            state.screens.put(id, locations);
         }
         return state;
     }

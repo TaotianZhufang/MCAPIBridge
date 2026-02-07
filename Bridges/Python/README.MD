@@ -7,7 +7,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest libary.Now version is 0.3.0.**
+**Please ensure you are using the latest libary.Now version is 0.3.2.**
 
 Use pip to install this.
 ```
@@ -135,20 +135,22 @@ Update the content of a Custom Screen block.
 ##### `Minecraft.getScreenLocations(screen_id)`
 Get world coordinates for all screen blocks with the specified ID.
 *   **screen_id**: Int ID of the screen.
-*   **return**: List of `Vec3` objects representing the center coordinates of each screen group.
+*   **return**: List of `ScreenLocation` objects. Each object contains `x`, `y`, `z` coordinates and a `dimension` property.
 
-##### `Minecraft.registerScreen(screen_id, x, y, z)`
+##### `Minecraft.registerScreen(screen_id, x, y, z, dimension="")`
 Manually register a screen location (used for programmatic screen creation).
 *   **screen_id**: Int ID of the screen.
 *   **x, y, z**: Double coordinates of the screen center.
+*   **dimension**: (Optional) String dimension ID (e.g., `"minecraft:the_nether"`). Defaults to empty string (context-dependent).
 
-##### `Minecraft.createScreenWall(start_x, start_y, start_z, width, height, axis='x', screen_id=1)`
+##### `Minecraft.createScreenWall(start_x, start_y, start_z, width, height, axis='x', screen_id=1, dimension="")`
 Automatically build a screen wall and register it.
 *   **start_x, start_y, start_z**: Int starting coordinates.
 *   **width**: Int width of the screen (in blocks).
 *   **height**: Int height of the screen (in blocks).
 *   **axis**: String `'x'` (East-West wall) or `'z'` (North-South wall).
 *   **screen_id**: Int ID to assign to the screen.
+*   **dimension**: (Optional) String dimension ID. Defaults to empty string.
 
 ---
 
@@ -301,3 +303,10 @@ Represents a 3D vector/coordinate.
 *   **properties**: `x`,`y`,`z`,`yaw`,`pitch`.
 *   **Methods**:
     *   **PlayerPos.forward(distance=1.0)**: Returns a new `Vec3` position at `distance` blocks ahead of the player's view.
+
+---
+
+### class `ScreenLocation`
+Represents the location of a screen or audio source, including dimension information.
+*   **properties**: `x`, `y`, `z`, `dimension`.
+*   **Constructor**: `ScreenLocation(x, y, z, dimension="minecraft:overworld")`

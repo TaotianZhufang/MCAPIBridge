@@ -20,5 +20,6 @@
   "mcapibridge.msg.welcome.3":"§aConnect to the server IP at the port 4711",
 
   "mcapibridge.msg.config.success": "§aScreen Configured! Size: %dx%d ID: %d",
-  "mcapibridge.msg.config.error.shape": "§cError: Irregular shape! Detected %d blocks, expected %d."
+  "mcapibridge.msg.config.error.shape": "§cError: Irregular shape! Detected %d blocks, expected %d.",
+  "mcapibridge.options.audioSync": "Audio Sync Offset"
 }

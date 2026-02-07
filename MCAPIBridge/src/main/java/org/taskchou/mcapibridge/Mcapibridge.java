@@ -1,10 +1,8 @@
 package org.taskchou.mcapibridge;
 
-import com.mojang.authlib.minecraft.client.MinecraftClient;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseItemCallback;
 
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -14,10 +12,8 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.command.argument.EntityAnchorArgumentType;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.MapIdComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -43,13 +39,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.property.Property;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -58,8 +50,6 @@ import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.item.map.MapState;
 import org.taskchou.mcapibridge.block.ScreenBlock;
 import org.taskchou.mcapibridge.block.ScreenBlockEntity;
@@ -85,15 +75,78 @@ public class Mcapibridge implements ModInitializer {
     public static final java.util.Map<Integer, byte[]> customMapData = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, byte[]> pendingAudioData = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.Map<String, AudioBuffer> audioBuffers = new java.util.concurrent.ConcurrentHashMap<>();
+    public static MinecraftServer serverInstance;
     public static final List<BridgeClientHandler> activeHandlers = new CopyOnWriteArrayList<>();
+    public static final Map<String, Long> lastSentDataTime = new ConcurrentHashMap<>();
     private static class AudioBuffer {
         String target;
         int sampleRate;
         java.io.ByteArrayOutputStream data = new java.io.ByteArrayOutputStream();
     }
+    public static class ActiveSound {
+        public String id;
+        public String sourceDataId;
+        public int screenId;
+        public long startTime;
+        public float duration;
+        public float volume;
+        public boolean loop;
+        public boolean isGlobal;
+
+        public float x, y, z;
+        public String dimension;
+        public float rolloff;
+
+        public ActiveSound(String id, String sourceDataId, int screenId, long startTime, float duration, float volume, boolean loop) {
+            this.id = id;
+            this.sourceDataId = sourceDataId;
+            this.screenId = screenId;
+            this.startTime = startTime;
+            this.duration = duration;
+            this.volume = volume;
+            this.loop = loop;
+            this.rolloff = 1.0f;
+            this.dimension = "";
+            this.isGlobal=false;
+        }
+
+        public ActiveSound(String id, String sourceDataId, float x, float y, float z, String dimension, long startTime, float duration, float volume, float rolloff, boolean loop) {
+            this.id = id;
+            this.sourceDataId = sourceDataId;
+            this.screenId = -1;
+            this.startTime = startTime;
+            this.duration = duration;
+            this.volume = volume;
+            this.loop = loop;
+            this.x = x; this.y = y; this.z = z;
+            this.dimension = dimension;
+            this.rolloff = rolloff;
+            this.isGlobal=false;
+        }
+
+        public ActiveSound(String id, String sourceDataId, float volume, boolean loop, float duration) {
+            this.id = id;
+            this.sourceDataId = sourceDataId;
+            this.screenId = -2;
+            this.volume = volume;
+            this.loop = loop;
+            this.duration = duration;
+            this.startTime = System.currentTimeMillis();
+            this.isGlobal = true;
+            this.dimension = "";
+            this.x=0; this.y=0; this.z=0; this.rolloff=0;
+        }
+    }
+
+    public static final Map<String, ActiveSound> activeSounds = new ConcurrentHashMap<>();
+    public static final Map<String, String> cloneMap = new ConcurrentHashMap<>();
+    public static final Map<String, byte[]> audioDataCache = new ConcurrentHashMap<>();
+    public static final Map<String, Integer> audioRateCache = new ConcurrentHashMap<>();
     public static final Map<Integer, Vec3d> SCREEN_LOCATIONS = new ConcurrentHashMap<>();
     public static final Block SCREEN_BLOCK = new ScreenBlock(FabricBlockSettings.create().strength(1.0f).luminance(15));
     public static BlockEntityType<ScreenBlockEntity> SCREEN_BLOCK_ENTITY;
+    public static final Map<java.util.UUID, Set<String>> playerListeningState = new ConcurrentHashMap<>();
+    private static final Map<String, Object> dataSendLocks = new ConcurrentHashMap<>();
 
     public record ClickPayload(int action) implements CustomPayload {
         public static final CustomPayload.Id<ClickPayload> ID = new CustomPayload.Id<>(CLICK_PACKET_ID);
@@ -135,6 +188,275 @@ public class Mcapibridge implements ModInitializer {
         public Id<? extends CustomPayload> getId() { return ID; }
     }
 
+    private void updateAudioState() {
+        if (activeSounds.isEmpty()) return;
+
+        ScreenDataState screenState = ScreenDataState.getServerState(serverInstance);
+        long now = System.currentTimeMillis();
+
+        activeSounds.entrySet().removeIf(entry -> {
+            ActiveSound s = entry.getValue();
+            float offset = (now - s.startTime) / 1000.0f;
+            return !s.loop && s.duration > 0 && offset >= s.duration;
+        });
+
+        for (ServerPlayerEntity player : serverInstance.getPlayerManager().getPlayerList()) {
+            java.util.UUID uuid = player.getUuid();
+            Set<String> listening = playerListeningState.computeIfAbsent(uuid, k -> new HashSet<>());
+            String pDim = player.getWorld().getRegistryKey().getValue().toString();
+            Vec3d pPos = player.getPos();
+
+            for (ActiveSound sound : activeSounds.values()) {
+                ScreenDataState.ScreenLocation bestLoc = null;
+                boolean shouldHear = false;
+
+
+                if (sound.isGlobal) {
+                    shouldHear = true;
+                } else if (sound.screenId > 0) {
+                    List<ScreenDataState.ScreenLocation> locs = screenState.getScreens(sound.screenId);
+                    double minDst = Double.MAX_VALUE;
+                    for (var loc : locs) {
+                        if (loc.dimension.equals(pDim)) {
+                            double dst = (loc.x - pPos.x)*(loc.x - pPos.x) +
+                                    (loc.y - pPos.y)*(loc.y - pPos.y) +
+                                    (loc.z - pPos.z)*(loc.z - pPos.z);
+                            if (dst < 100*100 && dst < minDst) {
+                                minDst = dst;
+                                bestLoc = loc;
+                            }
+                        }
+                    }
+                    if (bestLoc != null) shouldHear = true;
+                } else {
+                    if (sound.dimension.equals(pDim)) {
+                        double dst = (sound.x - pPos.x)*(sound.x - pPos.x) +
+                                (sound.y - pPos.y)*(sound.y - pPos.y) +
+                                (sound.z - pPos.z)*(sound.z - pPos.z);
+                        if (dst < 100*100) {
+                            shouldHear = true;
+                            bestLoc = new ScreenDataState.ScreenLocation(sound.x, sound.y, sound.z, sound.dimension);
+                        }
+                    }
+                }
+
+                if (shouldHear) {
+                    if (!listening.contains(sound.id)) {
+                        float offset = (now - sound.startTime) / 1000.0f;
+                        if (sound.loop && sound.duration > 0) offset %= sound.duration;
+
+                        if (sound.isGlobal) {
+                            sendPlayPacket2D(player, sound, offset);
+                        } else {
+                            sendPlayPacket(player, sound, bestLoc, offset);
+                        }
+                        listening.add(sound.id);
+                    }
+                } else {
+                    if (listening.contains(sound.id)) {
+                        sendStopPacket(player, sound.id);
+                        listening.remove(sound.id);
+                    }
+                }
+            }
+            listening.retainAll(activeSounds.keySet());
+        }
+    }
+
+    private void sendPlayPacket2D(ServerPlayerEntity player, ActiveSound sound, float offset) {
+        new Thread(() -> {
+            try {
+                long startTransfer = System.currentTimeMillis();
+
+                String dataId = sound.sourceDataId;
+                Object lock = dataSendLocks.computeIfAbsent(dataId, k -> new Object());
+
+                synchronized (lock) {
+                    String key = player.getUuid() + "_" + dataId;
+                    long lastTime = lastSentDataTime.getOrDefault(key, 0L);
+                    long now = System.currentTimeMillis();
+
+                    if (now - lastTime > 10000) {
+                        byte[] rawData = audioDataCache.get(dataId);
+                        Integer rate = audioRateCache.get(dataId);
+
+                        if (rawData != null && rate != null) {
+                            int chunkSize = 32000;
+                            for (int i = 0; i < rawData.length; i += chunkSize) {
+                                int end = Math.min(i + chunkSize, rawData.length);
+                                byte[] chunk = java.util.Arrays.copyOfRange(rawData, i, end);
+                                String action = (i == 0) ? "loadStart" : (end == rawData.length ? "loadEnd" : "loadContinue");
+                                if (rawData.length <= chunkSize) action = "load";
+
+                                player.networkHandler.sendPacket(
+                                        ServerPlayNetworking.createS2CPacket(
+                                                new AudioDataPayload(action, dataId, rate, chunk)
+                                        )
+                                );
+                                //Thread.sleep(2);
+                            }
+                            Thread.sleep(100);
+                            lastSentDataTime.put(key, System.currentTimeMillis());
+                        }
+                    }
+                }
+
+                if (!sound.id.equals(sound.sourceDataId)) {
+                    byte[] cloneData = sound.sourceDataId.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    player.networkHandler.sendPacket(
+                            ServerPlayNetworking.createS2CPacket(
+                                    new AudioDataPayload("clone", sound.id, 0, cloneData)
+                            )
+                    );
+                    Thread.sleep(10);
+                }
+
+                long endTransfer = System.currentTimeMillis();
+                float transferLag = (endTransfer - startTransfer) / 1000.0f;
+                float finalOffset = offset + transferLag;
+
+                if (sound.loop && sound.duration > 0) {
+                    finalOffset %= sound.duration;
+                } else if (finalOffset >= sound.duration) {
+                    return;
+                }
+
+                byte[] data = new byte[9];
+                packFloat(data, 0, sound.volume);
+                data[4] = (byte)(sound.loop ? 1 : 0);
+                packFloat(data, 5, finalOffset);
+
+                player.networkHandler.sendPacket(
+                        ServerPlayNetworking.createS2CPacket(
+                                new AudioDataPayload("play", sound.id, 0, data)
+                        )
+                );
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void packFloat(byte[] data, int offset, float value) {
+        int bits = Float.floatToIntBits(value);
+        data[offset] = (byte)(bits & 0xFF);
+        data[offset + 1] = (byte)((bits >> 8) & 0xFF);
+        data[offset + 2] = (byte)((bits >> 16) & 0xFF);
+        data[offset + 3] = (byte)((bits >> 24) & 0xFF);
+    }
+
+    public static void syncAudioDataToPlayer(ServerPlayerEntity player, String id, byte[] data, int rate) {
+        new Thread(() -> {
+            try {
+                int chunkSize = 32000;
+                for (int i = 0; i < data.length; i += chunkSize) {
+                    int end = Math.min(i + chunkSize, data.length);
+                    byte[] chunk = java.util.Arrays.copyOfRange(data, i, end);
+                    String action = (i == 0) ? "loadStart" : (end == data.length ? "loadEnd" : "loadContinue");
+                    if (data.length <= chunkSize) action = "load";
+
+                    player.networkHandler.sendPacket(
+                            ServerPlayNetworking.createS2CPacket(
+                                    new AudioDataPayload(action, id, rate, chunk)
+                            )
+                    );
+                    Thread.sleep(5);
+                }
+            } catch (Exception e) {}
+        }).start();
+    }
+
+    private void sendPlayPacket(ServerPlayerEntity player, ActiveSound sound, ScreenDataState.ScreenLocation loc, float offset) {
+        new Thread(() -> {
+            try {
+                long startTransfer = System.currentTimeMillis();
+
+                String dataId = sound.sourceDataId;
+                Object lock = dataSendLocks.computeIfAbsent(dataId, k -> new Object());
+
+                synchronized (lock) {
+                    String key = player.getUuid() + "_" + dataId;
+                    long lastTime = lastSentDataTime.getOrDefault(key, 0L);
+                    long now = System.currentTimeMillis();
+
+                    if (now - lastTime > 10000) {
+                        byte[] rawData = audioDataCache.get(dataId);
+                        Integer rate = audioRateCache.get(dataId);
+
+                        if (rawData != null && rate != null) {
+                            int chunkSize = 32000;
+                            for (int i = 0; i < rawData.length; i += chunkSize) {
+                                int end = Math.min(i + chunkSize, rawData.length);
+                                byte[] chunk = java.util.Arrays.copyOfRange(rawData, i, end);
+                                String action = (i == 0) ? "loadStart" : (end == rawData.length ? "loadEnd" : "loadContinue");
+                                if (rawData.length <= chunkSize) action = "load";
+
+                                player.networkHandler.sendPacket(
+                                        ServerPlayNetworking.createS2CPacket(
+                                                new AudioDataPayload(action, dataId, rate, chunk)
+                                        )
+                                );
+                                //Thread.sleep(2);
+                            }
+                            Thread.sleep(100);
+                            lastSentDataTime.put(key, System.currentTimeMillis());
+                        }
+                    }
+                }
+
+                if (!sound.id.equals(sound.sourceDataId)) {
+                    byte[] cloneData = sound.sourceDataId.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    player.networkHandler.sendPacket(
+                            ServerPlayNetworking.createS2CPacket(
+                                    new AudioDataPayload("clone", sound.id, 0, cloneData)
+                            )
+                    );
+                    Thread.sleep(10);
+                }
+
+                long endTransfer = System.currentTimeMillis();
+                float transferLag = (endTransfer - startTransfer) / 1000.0f;
+                float finalOffset = offset + transferLag;
+
+                if (sound.loop && sound.duration > 0) {
+                    finalOffset %= sound.duration;
+                } else if (finalOffset >= sound.duration) {
+                    return;
+                }
+
+                byte[] dimBytes = loc.dimension.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                int dimLen = dimBytes.length;
+                byte[] data = new byte[25 + 4 + dimLen];
+
+                packFloat(data, 0, sound.volume);
+                packFloat(data, 4, sound.rolloff);
+                packFloat(data, 8, (float)loc.x);
+                packFloat(data, 12, (float)loc.y);
+                packFloat(data, 16, (float)loc.z);
+                packFloat(data, 20, finalOffset); // ★ 使用补偿后的 Offset
+                data[24] = (byte)(sound.loop ? 1 : 0);
+
+                data[25] = (byte)(dimLen >> 24); data[26] = (byte)(dimLen >> 16);
+                data[27] = (byte)(dimLen >> 8); data[28] = (byte)(dimLen);
+                System.arraycopy(dimBytes, 0, data, 29, dimLen);
+
+                player.networkHandler.sendPacket(
+                        ServerPlayNetworking.createS2CPacket(
+                                new AudioDataPayload("play3d", sound.id, 0, data)
+                        )
+                );
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void sendStopPacket(ServerPlayerEntity player, String id) {
+        player.networkHandler.sendPacket(ServerPlayNetworking.createS2CPacket(new AudioDataPayload("stop", id, 0, new byte[0])));
+    }
+
     @Override
     public void onInitialize() {
 
@@ -155,6 +477,7 @@ public class Mcapibridge implements ModInitializer {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(content -> {
             content.add(screenItem);
         });
+
 
         ServerPlayNetworking.registerGlobalReceiver(ScreenPayloads.SetId.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
@@ -208,6 +531,7 @@ public class Mcapibridge implements ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             System.out.println("[MCAPI] Server Starting...");
+            serverInstance = server;
             if (serverThread != null) serverThread.stopServer();
 
             serverThread = new BridgeSocketServer(server);
@@ -228,6 +552,7 @@ public class Mcapibridge implements ModInitializer {
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
+            playerListeningState.remove(handler.getPlayer().getUuid());
 
             player.sendMessage(Text.of("§e========================================"));
             player.sendMessage(Text.translatable("mcapibridge.msg.welcome.1"));
@@ -262,6 +587,57 @@ public class Mcapibridge implements ModInitializer {
 
             // eventQueue.add("PLAYER_JOIN," + player.getName().getString() + "," + player.getId());
         });
+
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                    long now = System.currentTimeMillis();
+                    
+                    var it = activeSounds.entrySet().iterator();
+                    while (it.hasNext()) {
+                        var entry = it.next();
+                        ActiveSound s = entry.getValue();
+
+                        if (!s.loop && s.duration > 0) {
+                            if (now - s.startTime > (s.duration * 1000 + 5000)) {
+                                it.remove();
+                                // System.out.println("Auto-removed finished sound: " + s.id);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }).start();
+
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                    if (serverInstance == null||!serverInstance.isRunning()) continue;
+
+                    updateAudioState();
+                } catch (Exception ignored) {}
+            }
+        }).start();
+
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
+            System.out.println("[Debug] Player changed dimension. Resetting state.");
+
+            java.util.UUID uuid = player.getUuid();
+
+            playerListeningState.remove(uuid);
+
+            String uuidStr = uuid.toString();
+            lastSentDataTime.keySet().removeIf(key -> key.startsWith(uuidStr));
+
+            player.networkHandler.sendPacket(
+                    ServerPlayNetworking.createS2CPacket(
+                            new AudioDataPayload("reset", "all", 0, new byte[0])
+                    )
+            );
+        });
+
 /*
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             if (world instanceof ServerWorld) {
@@ -297,6 +673,7 @@ public class Mcapibridge implements ModInitializer {
 
 
     }
+
 
     private static HitResult longDistanceRaycast(World world, ServerPlayerEntity player, double maxDistance) {
         Vec3d start = player.getEyePos();
@@ -435,9 +812,26 @@ public class Mcapibridge implements ModInitializer {
                     case "screen.getPos": return getScreenPos(args);
                     case "screen.register": return registerScreen(args);
                     case "audio.clone": return audioClone(args);
+                    case "audio.reset": return audioReset(args);
+                    case "audio.playScreen": return audioPlayScreen(args);
+                    case "audio.syncProgress": return audioSyncProgress(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
+        }
+
+        private java.util.List<ServerPlayerEntity> getTargetPlayers(String target) {
+            if (target.equals("@a")) {
+                return new java.util.ArrayList<>(mcServer.getPlayerManager().getPlayerList());
+            } else if (target.isEmpty()) {
+                if (mcServer.getPlayerManager().getPlayerList().isEmpty()) {
+                    return java.util.Collections.emptyList();
+                }
+                return java.util.List.of(mcServer.getPlayerManager().getPlayerList().get(0));
+            } else {
+                ServerPlayerEntity p = findPlayer(target);
+                return p != null ? java.util.List.of(p) : java.util.Collections.emptyList();
+            }
         }
 
         private String setBlock(String[] args) {
@@ -1184,70 +1578,77 @@ public class Mcapibridge implements ModInitializer {
             data[offset + 3] = (byte)((bits >> 24) & 0xFF);
         }
 
-        private void sendAudioToTarget(String target, String action, String id, int sampleRate, byte[] data) {
+        private void sendAudioToTarget(String target, String action, String id, int sampleRate, byte[] data, String dimension) {
             mcServer.execute(() -> {
-                if (target.equals("@a")) {
-                    for (ServerPlayerEntity player : mcServer.getPlayerManager().getPlayerList()) {
+                java.util.List<ServerPlayerEntity> players = getTargetPlayers(target);
+                System.out.println("Sending " + action + " to " + players.size() + " players");
+                System.out.println(players);
+
+                for (ServerPlayerEntity player : players) {
+                /* //If you do it , you cant listen to the audio when you across to the audio dimension from other dimensions
+                    if (dimension != null) {
+                        String pDim = player.getWorld().getRegistryKey().getValue().toString();
+                        if (!pDim.equals(dimension)) continue;
+                    }
+                */
+                    try {
                         player.networkHandler.sendPacket(
-                                ServerPlayNetworking.createS2CPacket(new Mcapibridge.AudioDataPayload(action, id, sampleRate, data))
+                                ServerPlayNetworking.createS2CPacket(
+                                        new Mcapibridge.AudioDataPayload(action, id, sampleRate, data)
+                                )
                         );
                     }
-                } else {
-                    ServerPlayerEntity player = target.isEmpty()
-                            ? (mcServer.getPlayerManager().getPlayerList().isEmpty() ? null : mcServer.getPlayerManager().getPlayerList().get(0))
-                            : findPlayer(target);
-                    if (player != null) {
-                        player.networkHandler.sendPacket(
-                                ServerPlayNetworking.createS2CPacket(new Mcapibridge.AudioDataPayload(action, id, sampleRate, data))
-                        );
-                    }
+                    catch (Exception e) {e.printStackTrace();}
                 }
             });
         }
 
+
         private String audioLoad(String[] args) {
-            // args: target, id, sampleRate, base64data
             String target = args[0];
             String id = args[1];
-            int sampleRate = Integer.parseInt(args[2]);
-            String base64Data = args[3];
 
-            byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
 
-            AudioBuffer buffer = new AudioBuffer();
-            buffer.target = target;
-            buffer.sampleRate = sampleRate;
             try {
+                int sampleRate = Integer.parseInt(args[2]);
+                String base64Data = args[3];
+
+                byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
+
+                AudioBuffer buffer = new AudioBuffer();
+                buffer.target = target;
+                buffer.sampleRate = sampleRate;
                 buffer.data.write(chunk);
+
+                audioBuffers.put(id, buffer);
+                //System.out.println("[Debug] Buffer PUT success: " + id);
+
             } catch (Exception e) {
+                System.err.println("[Error] audioLoad Exception: " + e);
                 e.printStackTrace();
             }
-
-            audioBuffers.put(id, buffer);
             return null;
         }
 
         private String audioStream(String[] args) {
-            // args: target, id, sampleRate, base64chunk
-            String target = args[0];
             String id = args[1];
-            int sampleRate = Integer.parseInt(args[2]);
-            String base64Data = args[3];
-
-            byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
+            //System.out.println("DEBUG: Stream chunk for " + id);
 
             AudioBuffer buffer = audioBuffers.get(id);
             if (buffer != null) {
                 try {
+                    String base64Data = args[3];
+                    byte[] chunk = java.util.Base64.getDecoder().decode(base64Data);
                     buffer.data.write(chunk);
                 } catch (Exception e) {
+                    System.err.println("Stream Write Error: " + e);
                     e.printStackTrace();
                 }
+            } else {
+                System.err.println("DEBUG: Buffer NOT FOUND for id: " + id);
             }
             return null;
         }
-
-
 
         private String audioPlay(String[] args) {
             String target = args[0];
@@ -1255,54 +1656,73 @@ public class Mcapibridge implements ModInitializer {
             float volume = args.length > 2 ? Float.parseFloat(args[2]) : 1.0f;
             boolean loop = args.length > 3 && Boolean.parseBoolean(args[3]);
 
-            byte[] data = new byte[5];
-            packFloat(data, 0, volume);
-            data[4] = (byte)(loop ? 1 : 0);
+            String dataId = cloneMap.getOrDefault(id, id);
 
-            sendAudioToTarget(target, "play", id, 0, data);
+            float duration = 3600f;
+            if (audioDataCache.containsKey(dataId)) {
+                int len = audioDataCache.get(dataId).length;
+                int rate = audioRateCache.getOrDefault(dataId, 44100);
+                duration = (float) len / (rate * 2.0f);
+            }
+
+            ActiveSound sound = new ActiveSound(id, dataId, volume, loop, duration);
+            activeSounds.put(id, sound);
+
+            for (Set<String> listening : Mcapibridge.playerListeningState.values()) {
+                listening.remove(id);
+            }
+
             return null;
         }
 
-        private String audioPlay3d(String[] args) {
-            String target = args[0];
-            String id = args[1];
-            float x = Float.parseFloat(args[2]);
-            float y = Float.parseFloat(args[3]);
-            float z = Float.parseFloat(args[4]);
-            float volume = args.length > 5 ? Float.parseFloat(args[5]) : 1.0f;
-            float rolloff = args.length > 6 ? Float.parseFloat(args[6]) : 1.0f;
-            boolean loop = args.length > 7 && Boolean.parseBoolean(args[7]);
+        private String audioPlayScreen(String[] args) {
+            // args: target, audioId, screenId, volume, loop
+            String audioId = args[1];
+            int screenId = Integer.parseInt(args[2]);
+            float volume = Float.parseFloat(args[3]);
+            boolean loop = Boolean.parseBoolean(args[4]);
 
-            byte[] data = new byte[21];
-            packFloat(data, 0, volume);
-            packFloat(data, 4, rolloff);
-            packFloat(data, 8, x);
-            packFloat(data, 12, y);
-            packFloat(data, 16, z);
-            data[20] = (byte)(loop ? 1 : 0);
+            String dataId = cloneMap.getOrDefault(audioId, audioId);
 
-            sendAudioToTarget(target, "play3d", id, 0, data);
+            float duration = 3600f;
+            if (audioDataCache.containsKey(dataId)) {
+                int len = audioDataCache.get(dataId).length;
+                int rate = audioRateCache.getOrDefault(dataId, 44100);
+                duration = (float) len / (rate * 2.0f);
+            }
+
+            ActiveSound sound = new ActiveSound(audioId, dataId, screenId, System.currentTimeMillis(), duration, volume, loop);
+            activeSounds.put(audioId, sound);
+
+            for (Set<String> listening : Mcapibridge.playerListeningState.values()) {
+                listening.remove(audioId);
+            }
+
             return null;
         }
+
 
         private String audioPause(String[] args) {
             String target = args[0];
             String id = args[1];
-            sendAudioToTarget(target, "pause", id, 0, new byte[0]);
+            sendAudioToTarget(target, "pause", id, 0, new byte[0], null);
             return null;
         }
 
         private String audioStop(String[] args) {
             String target = args[0];
             String id = args[1];
-            sendAudioToTarget(target, "stop", id, 0, new byte[0]);
+            if (target.equals("@a")) {
+                activeSounds.remove(id);
+            }
+            sendAudioToTarget(target, "stop", id, 0, new byte[0], null);
             return null;
         }
 
         private String audioUnload(String[] args) {
             String target = args[0];
             String id = args[1];
-            sendAudioToTarget(target, "unload", id, 0, new byte[0]);
+            sendAudioToTarget(target, "unload", id, 0, new byte[0], null);
             return null;
         }
 
@@ -1314,7 +1734,7 @@ public class Mcapibridge implements ModInitializer {
             byte[] data = new byte[4];
             packFloat(data, 0, volume);
 
-            sendAudioToTarget(target, "volume", id, 0, data);
+            sendAudioToTarget(target, "volume", id, 0, data, null);
             return null;
         }
 
@@ -1330,68 +1750,7 @@ public class Mcapibridge implements ModInitializer {
             packFloat(data, 4, y);
             packFloat(data, 8, z);
 
-            sendAudioToTarget(target, "position", id, 0, data);
-            return null;
-        }
-
-        private String audioFinishLoad(String[] args) {
-            // args: target, id
-            String target = args[0];
-            String id = args[1];
-
-            AudioBuffer buffer = audioBuffers.remove(id);
-            if (buffer == null) {
-                return null;
-            }
-
-            byte[] fullData = buffer.data.toByteArray();
-            int sampleRate = buffer.sampleRate;
-
-            mcServer.execute(() -> {
-                java.util.List<ServerPlayerEntity> players;
-                if (target.equals("@a")) {
-                    players = new java.util.ArrayList<>(mcServer.getPlayerManager().getPlayerList());
-                } else if (target.isEmpty()) {
-                    players = mcServer.getPlayerManager().getPlayerList().isEmpty()
-                            ? java.util.Collections.emptyList()
-                            : java.util.List.of(mcServer.getPlayerManager().getPlayerList().get(0));
-                } else {
-                    ServerPlayerEntity p = findPlayer(target);
-                    players = p != null ? java.util.List.of(p) : java.util.Collections.emptyList();
-                }
-
-                for (ServerPlayerEntity player : players) {
-                    int chunkSize = 32000;
-                    for (int i = 0; i < fullData.length; i += chunkSize) {
-                        int end = Math.min(i + chunkSize, fullData.length);
-                        byte[] chunk = java.util.Arrays.copyOfRange(fullData, i, end);
-
-                        String action;
-                        if (i == 0) {
-                            action = "loadStart";
-                        } else if (end == fullData.length) {
-                            action = "loadEnd";
-                        } else {
-                            action = "loadContinue";
-                        }
-
-                        player.networkHandler.sendPacket(
-                                ServerPlayNetworking.createS2CPacket(
-                                        new Mcapibridge.AudioDataPayload(action, id, sampleRate, chunk)
-                                )
-                        );
-                    }
-
-                    if (fullData.length <= 32000) {
-                        player.networkHandler.sendPacket(
-                                ServerPlayNetworking.createS2CPacket(
-                                        new Mcapibridge.AudioDataPayload("loadEnd", id, sampleRate, new byte[0])
-                                )
-                        );
-                    }
-                }
-            });
-
+            sendAudioToTarget(target, "position", id, 0, data, null);
             return null;
         }
 
@@ -1400,12 +1759,23 @@ public class Mcapibridge implements ModInitializer {
             int screenId = Integer.parseInt(args[1]);
             String base64 = args[2];
             byte[] imgData = java.util.Base64.getDecoder().decode(base64);
+            long timestamp = System.currentTimeMillis();
 
             mcServer.execute(() -> {
-                ScreenFramePayload packet = new ScreenFramePayload(screenId, imgData);
+                ScreenDataState state = ScreenDataState.getServerState(mcServer);
+                List<ScreenDataState.ScreenLocation> locs = state.getScreens(screenId);
+
+                Set<String> targetDims = new HashSet<>();
+                for (var loc : locs) targetDims.add(loc.dimension);
+
+                ScreenFramePayload packet = new ScreenFramePayload(screenId, imgData, timestamp);
+
                 if (target.equals("@a")) {
                     for (ServerPlayerEntity p : mcServer.getPlayerManager().getPlayerList()) {
-                        ServerPlayNetworking.send(p, packet);
+                        String pDim = p.getWorld().getRegistryKey().getValue().toString();
+                        if (targetDims.contains(pDim)) {
+                            ServerPlayNetworking.send(p, packet);
+                        }
                     }
                 } else {
                     ServerPlayerEntity p = findPlayer(target);
@@ -1415,49 +1785,65 @@ public class Mcapibridge implements ModInitializer {
             return null;
         }
 
+        private String audioFinishLoad(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            //System.out.println("[Debug] Cached audio " + id);
+
+
+            AudioBuffer buffer = audioBuffers.remove(id);
+            if (buffer == null) return null;
+
+            byte[] fullData = buffer.data.toByteArray();
+            int sampleRate = buffer.sampleRate;
+
+            audioDataCache.put(id, fullData);
+            audioRateCache.put(id, sampleRate);
+            //System.out.println("[Debug] Cached audio " + id + ", Size: " + fullData.length);
+
+            mcServer.execute(() -> {
+                java.util.List<ServerPlayerEntity> players = getTargetPlayers(target);
+
+                for (ServerPlayerEntity player : players) {
+                    int chunkSize = 32000;
+                    for (int i = 0; i < fullData.length; i += chunkSize) {
+                        int end = Math.min(i + chunkSize, fullData.length);
+                        byte[] chunk = java.util.Arrays.copyOfRange(fullData, i, end);
+
+                        String action;
+                        if (i == 0) action = "loadStart";
+                        else if (end == fullData.length) action = "loadEnd";
+                        else action = "loadContinue";
+
+                        if (fullData.length <= chunkSize) action = "load";
+
+                        player.networkHandler.sendPacket(
+                                ServerPlayNetworking.createS2CPacket(
+                                        new Mcapibridge.AudioDataPayload(action, id, sampleRate, chunk)
+                                )
+                        );
+                    }
+                }
+            });
+            return null;
+        }
+
         private String getScreenPos(String[] args) {
             try {
                 int id = Integer.parseInt(args[0]);
                 ScreenDataState state = ScreenDataState.getServerState(mcServer);
-                List<Vec3d> allBlocks = state.getScreens(id);
+                List<ScreenDataState.ScreenLocation> centers = state.getScreens(id);
 
-                if (allBlocks == null || allBlocks.isEmpty()) return "ERROR";
-
-                List<Vec3d> centers = new ArrayList<>();
-                List<List<Vec3d>> clusters = new ArrayList<>();
-
-                for (Vec3d pos : allBlocks) {
-                    boolean added = false;
-                    for (List<Vec3d> cluster : clusters) {
-                        if (cluster.get(0).squaredDistanceTo(pos) < 256.0) {
-                            cluster.add(pos);
-                            added = true;
-                            break;
-                        }
-                    }
-                    if (!added) {
-                        List<Vec3d> newCluster = new ArrayList<>();
-                        newCluster.add(pos);
-                        clusters.add(newCluster);
-                    }
-                }
+                if (centers == null || centers.isEmpty()) return "ERROR";
 
                 StringBuilder sb = new StringBuilder();
-                for (List<Vec3d> cluster : clusters) {
-                    double sumX = 0, sumY = 0, sumZ = 0;
-                    for (Vec3d p : cluster) {
-                        sumX += p.x;
-                        sumY += p.y;
-                        sumZ += p.z;
-                    }
-                    if (sb.length() > 0) sb.append("|");
-                    sb.append(String.format(java.util.Locale.US, "%.2f,%.2f,%.2f",
-                            sumX / cluster.size(),
-                            sumY / cluster.size(),
-                            sumZ / cluster.size()
-                    ));
-                }
+                for (int i = 0; i < centers.size(); i++) {
+                    var loc = centers.get(i);
+                    if (i > 0) sb.append("|");
 
+                    sb.append(String.format(java.util.Locale.US, "%.2f,%.2f,%.2f,%s",
+                            loc.x, loc.y, loc.z, loc.dimension));
+                }
                 return sb.toString();
 
             } catch (Exception e) {
@@ -1472,36 +1858,87 @@ public class Mcapibridge implements ModInitializer {
                 double x = Double.parseDouble(args[1]);
                 double y = Double.parseDouble(args[2]);
                 double z = Double.parseDouble(args[3]);
+                String dimension = args.length > 4 ? args[4] : "minecraft:overworld";
 
                 mcServer.execute(() -> {
                     ScreenDataState state = ScreenDataState.getServerState(mcServer);
-                    state.addScreen(id, new Vec3d(x, y, z));
+                    state.addScreen(id, new Vec3d(x, y, z), dimension);
                 });
             } catch (Exception e) {}
             return null;
         }
+
 
         private String audioClone(String[] args) {
             String target = args[0];
             String sourceId = args[1];
             String newId = args[2];
 
+            String rootId = cloneMap.getOrDefault(sourceId, sourceId);
+            cloneMap.put(newId, rootId);
+
             byte[] data = sourceId.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
-            mcServer.execute(() -> {
-                if (target.equals("@a")) {
-                    for (ServerPlayerEntity p : mcServer.getPlayerManager().getPlayerList()) {
-                        ServerPlayNetworking.send(p, new AudioDataPayload("clone", newId, 0, data));
-                    }
-                } else {
-                    ServerPlayerEntity p = findPlayer(target);
-                    if (p != null) ServerPlayNetworking.send(p, new AudioDataPayload("clone", newId, 0, data));
-                }
-            });
+            sendAudioToTarget(target, "clone", newId, 0, data, null);
             return null;
         }
 
+        private String audioReset(String[] args) {
+            String target = args[0];
 
+            Mcapibridge.activeSounds.clear();
+            Mcapibridge.cloneMap.clear();
+            Mcapibridge.audioDataCache.clear();
+            Mcapibridge.audioRateCache.clear();
+
+            sendAudioToTarget(target, "reset", "all", 0, new byte[0], null);
+
+            return null;
+        }
+
+        private String audioPlay3d(String[] args) {
+            String target = args[0];
+            String id = args[1];
+            float x = Float.parseFloat(args[2]);
+            float y = Float.parseFloat(args[3]);
+            float z = Float.parseFloat(args[4]);
+            float volume = args.length > 5 ? Float.parseFloat(args[5]) : 1.0f;
+            float rolloff = args.length > 6 ? Float.parseFloat(args[6]) : 1.0f;
+            boolean loop = args.length > 7 && Boolean.parseBoolean(args[7]);
+            String dimension = args.length > 8 ? args[8] : "minecraft:overworld";
+            try {
+                ServerWorld w = resolveWorld(args, 8);
+                dimension = w.getRegistryKey().getValue().toString();
+            } catch(Exception ignored) {}
+
+            String dataId = cloneMap.getOrDefault(id, id);
+            float duration = 3600f;
+            if (audioDataCache.containsKey(dataId)) {
+                int len = audioDataCache.get(dataId).length;
+                int rate = audioRateCache.getOrDefault(dataId, 44100);
+                duration = (float) len / (rate * 2.0f);
+            }
+
+            ActiveSound sound = new ActiveSound(id, dataId, x, y, z, dimension, System.currentTimeMillis(), duration, volume, rolloff, loop);
+            activeSounds.put(id, sound);
+
+            for (Set<String> listening : Mcapibridge.playerListeningState.values()) {
+                listening.remove(id);
+            }
+            return null;
+        }
+
+        private String audioSyncProgress(String[] args) {
+            String id = args[1];
+            float progress = Float.parseFloat(args[2]);
+
+            ActiveSound sound = Mcapibridge.activeSounds.get(id);
+            if (sound != null) {
+                sound.startTime = System.currentTimeMillis() - (long)(progress * 1000);
+                // System.out.println("Synced progress for " + id + ": " + progress + "s");
+            }
+            return null;
+        }
 
     }
 }

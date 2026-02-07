@@ -26,6 +26,10 @@ public class McapibridgeClient implements ClientModInitializer {
 
         ModConfig.load();
 
+        ClientPlayNetworking.registerGlobalReceiver(ScreenFramePayload.ID, (payload, context) -> {
+            ScreenTextureManager.updateTexture(payload.screenId(), payload.imageData(), payload.timestamp());
+        });
+
         ClientPlayNetworking.registerGlobalReceiver(Mcapibridge.AudioDataPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 handleAudioPacket(payload.action(), payload.id(), payload.sampleRate(), payload.data());
@@ -41,7 +45,11 @@ public class McapibridgeClient implements ClientModInitializer {
         BlockEntityRendererRegistry.register(Mcapibridge.SCREEN_BLOCK_ENTITY, ScreenBlockRenderer::new);
 
         ClientPlayNetworking.registerGlobalReceiver(ScreenFramePayload.ID, (payload, context) -> {
-            ScreenTextureManager.updateTexture(payload.screenId(), payload.imageData());
+            ScreenTextureManager.updateTexture(
+                    payload.screenId(),
+                    payload.imageData(),
+                    payload.timestamp()
+            );
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -98,7 +106,10 @@ public class McapibridgeClient implements ClientModInitializer {
 
     private void handleAudioPacket(String action, String id, int sampleRate, byte[] data) {
         switch (action) {
-            case "load" -> AudioPlayer.loadAudio(id, data, sampleRate);
+            case "load" -> {
+                System.out.println("Client received LOAD packet: " + data.length + " bytes");
+                AudioPlayer.loadAudio(id, data, sampleRate);
+            }
             case "stream" -> AudioPlayer.streamAudio(id, data, sampleRate);
             case "loadStart" -> AudioPlayer.loadStart(id, data, sampleRate);
             case "loadContinue" -> AudioPlayer.loadContinue(id, data);
@@ -106,21 +117,39 @@ public class McapibridgeClient implements ClientModInitializer {
             case "play" -> {
                 float volume = 1.0f;
                 boolean loop = false;
+                float offset = 0.0f;
+
                 if (data.length >= 5) {
                     volume = bytesToFloat(data, 0);
                     loop = data[4] != 0;
                 }
-                AudioPlayer.play(id, volume, loop);
+                if (data.length >= 9) {
+                    offset = bytesToFloat(data, 5);
+                }
+
+                AudioPlayer.play(id, volume, loop, offset);
             }
             case "play3d" -> {
-                if (data.length >= 21) {
+                if (data.length >= 29) {
                     float volume = bytesToFloat(data, 0);
                     float rolloff = bytesToFloat(data, 4);
                     float x = bytesToFloat(data, 8);
                     float y = bytesToFloat(data, 12);
                     float z = bytesToFloat(data, 16);
-                    boolean loop = data[20] != 0;
-                    AudioPlayer.play3d(id, x, y, z, volume, rolloff, loop);
+                    float offset = bytesToFloat(data, 20); // ★ 读取 Offset
+                    boolean loop = data[24] != 0;
+
+                    int len = ((data[25] & 0xFF) << 24) |
+                            ((data[26] & 0xFF) << 16) |
+                            ((data[27] & 0xFF) << 8) |
+                            (data[28] & 0xFF);
+
+                    String dimension = "minecraft:overworld";
+                    if (len > 0 && data.length >= 29 + len) {
+                        dimension = new String(data, 29, len, java.nio.charset.StandardCharsets.UTF_8);
+                    }
+
+                    AudioPlayer.play3d(id, x, y, z, volume, rolloff, loop, dimension, offset);
                 }
             }
             case "pause" -> AudioPlayer.pause(id);
@@ -142,8 +171,10 @@ public class McapibridgeClient implements ClientModInitializer {
             }
             case "clone" -> {
                 String sourceId = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+                System.out.println("[Debug] id:"+id+" sourceId:"+sourceId);
                 AudioPlayer.cloneAudio(id, sourceId);
             }
+            case "reset" -> AudioPlayer.cleanup();
         }
     }
 

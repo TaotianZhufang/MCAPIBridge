@@ -56,8 +56,8 @@
 ### 🖥️ Custom Screen System
 *   **Dynamic Web Screen**: A new custom block `mcapibridge:screen` that can display real-time images or video streams controlled by scripts.
 *   **Seamless Tiling**: Automatically merges adjacent screen blocks into a single large display, perfect for video walls or billboards.
-*   **High Performance**: Uses client-side texture rendering and JPG/PNG streaming for smooth 30 FPS playback.Recommend JPG streaming.
-*   **Interactive Configuration**: Right-click screen blocks with to easily configure IDs and layout without commands.
+*   **High Performance**: Uses client-side texture rendering and JPG/PNG streaming for smooth 30 FPS playback. Recommend JPG streaming.
+*   **Interactive Configuration**: Right-click screen blocks to easily configure IDs and layout without commands.
 *   **Crafting Recipe**:
     ```
     G G G   (Glass Pane)
@@ -97,6 +97,11 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 ---
 
 ## 📋 Update Log
+
+#### 2/8/2026 Alpha-0.4.1
+*   **Audio & Video Dimension Support**: Implemented dimension-aware playback. Screens and 3D audio now correctly isolate between Overworld, Nether, and End.
+*   **Hot-Join & Resume Playback**: Added state persistence and offset synchronization. New players joining the server will automatically receive audio data and resume playback in perfect sync with the video.
+*   **Sync Adjustment**: Added a slider in the audio settings to manually adjust audio latency compensation (+/- 5.00s).
 
 #### 2/6/2026 Alpha-0.4.0
 *   **Custom Screen System**: Introduced `mcapibridge:screen` block for displaying real-time images and video streams.
