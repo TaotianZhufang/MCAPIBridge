@@ -21,5 +21,20 @@
 
   "mcapibridge.msg.config.success": "§aScreen Configured! Size: %dx%d ID: %d",
   "mcapibridge.msg.config.error.shape": "§cError: Irregular shape! Detected %d blocks, expected %d.",
-  "mcapibridge.options.audioSync": "Audio Sync Offset"
+  "mcapibridge.options.audioSync": "Audio Sync Offset",
+
+  "block.mcapibridge.io": "IO Port",
+  "block.mcapibridge.io.desc": "Connects Redstone signals with external scripts.",
+
+  "mcapibridge.gui.io.title": "IO Configuration",
+  "mcapibridge.gui.io.label.id": "Channel ID:",
+  "mcapibridge.gui.io.label.mode": "Mode:",
+  "mcapibridge.gui.io.mode.output": "Output (MC -> Bridges)",
+  "mcapibridge.gui.io.mode.input": "Input (Bridges -> MC)",
+  "mcapibridge.gui.io.button.save": "Save",
+  "mcapibridge.gui.io.error.nan": "ID must be a number",
+
+  "mcapibridge.msg.io.success": "§aIO Configured: ID %d",
+  "mcapibridge.msg.io.switch": "IO Mode: %s §7(ID: %d)",
+  "mcapibridge.msg.io.info": "§eCurrent IO ID: §f%d  "
 }

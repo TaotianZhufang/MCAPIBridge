@@ -70,10 +70,6 @@ public class ScreenBlock extends BlockWithEntity {
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) return ActionResult.SUCCESS;
 
-        if (!player.getMainHandStack().isEmpty()) {
-            return ActionResult.PASS;
-        }
-
         int currentId = 1;
         if (world.getBlockEntity(pos) instanceof ScreenBlockEntity be) {
             currentId = be.screenId;

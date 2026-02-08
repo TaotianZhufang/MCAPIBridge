@@ -21,5 +21,20 @@
 
   "mcapibridge.msg.config.success": "§a螢幕配置成功！尺寸: §a%d§ax%d§a ID: %d",
   "mcapibridge.msg.config.error.shape": "§c配置失敗：形狀不規則 (偵測到 §c%d§c，需要 §c%d)",
-  "mcapibridge.options.audioSync": "音訊同步延遲"
+  "mcapibridge.options.audioSync": "音訊同步延遲",
+
+  "block.mcapibridge.io": "IO 端口",
+  "block.mcapibridge.io.desc": "連接紅石訊號与外部腳本。",
+
+  "mcapibridge.gui.io.title": "IO 配置",
+  "mcapibridge.gui.io.label.id": "頻道 ID:",
+  "mcapibridge.gui.io.label.mode": "模式:",
+  "mcapibridge.gui.io.mode.output": "輸出 (MC -> Bridges)",
+  "mcapibridge.gui.io.mode.input": "輸入 (Bridges -> MC)",
+  "mcapibridge.gui.io.button.save": "儲存",
+  "mcapibridge.gui.io.error.nan": "ID 必須為數字",
+
+  "mcapibridge.msg.io.success": "§aIO 配置成功: ID %d",
+  "mcapibridge.msg.io.switch": "IO 模式切換: %s §7(ID: %d)",
+  "mcapibridge.msg.io.info": "§e目前 IO ID: §f%d  "
 }

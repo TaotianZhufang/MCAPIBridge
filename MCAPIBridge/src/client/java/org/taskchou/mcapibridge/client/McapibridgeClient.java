@@ -11,8 +11,11 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
+import org.taskchou.mcapibridge.client.gui.IOConfigScreen;
 import org.taskchou.mcapibridge.client.gui.ScreenConfigScreen;
+import org.taskchou.mcapibridge.client.render.IOBlockRenderer;
 import org.taskchou.mcapibridge.client.render.ScreenBlockRenderer;
+import org.taskchou.mcapibridge.payload.IOPayloads;
 import org.taskchou.mcapibridge.payload.ScreenFramePayload;
 import org.taskchou.mcapibridge.payload.ScreenPayloads;
 
@@ -25,6 +28,8 @@ public class McapibridgeClient implements ClientModInitializer {
         System.out.println("MCAPIBridge Client Initialized");
 
         ModConfig.load();
+
+        BlockEntityRendererRegistry.register(Mcapibridge.IO_BLOCK_ENTITY, IOBlockRenderer::new);
 
         ClientPlayNetworking.registerGlobalReceiver(ScreenFramePayload.ID, (payload, context) -> {
             ScreenTextureManager.updateTexture(payload.screenId(), payload.imageData(), payload.timestamp());
@@ -55,6 +60,12 @@ public class McapibridgeClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             System.out.println("[MCAPIBridge] Cleaning up audio...");
             AudioPlayer.cleanup();
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(IOPayloads.OpenConfig.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                context.client().setScreen(new IOConfigScreen(payload.pos(), payload.currentId(), payload.currentMode()));
+            });
         });
 
         final boolean[] wasAttackPressed = {false};

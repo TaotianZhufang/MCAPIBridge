@@ -45,15 +45,20 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.map.MapState;
+import org.taskchou.mcapibridge.block.IOBlock;
+import org.taskchou.mcapibridge.block.IOBlockEntity;
 import org.taskchou.mcapibridge.block.ScreenBlock;
 import org.taskchou.mcapibridge.block.ScreenBlockEntity;
+import org.taskchou.mcapibridge.item.IOBlockItem;
 import org.taskchou.mcapibridge.item.ScreenBlockItem;
+import org.taskchou.mcapibridge.payload.IOPayloads;
 import org.taskchou.mcapibridge.payload.ScreenFramePayload;
 import org.taskchou.mcapibridge.payload.ScreenPayloads;
 
@@ -78,6 +83,8 @@ public class Mcapibridge implements ModInitializer {
     public static MinecraftServer serverInstance;
     public static final List<BridgeClientHandler> activeHandlers = new CopyOnWriteArrayList<>();
     public static final Map<String, Long> lastSentDataTime = new ConcurrentHashMap<>();
+    public static final Block IO_BLOCK = new IOBlock(FabricBlockSettings.create().strength(1.0f));
+    public static BlockEntityType<IOBlockEntity> IO_BLOCK_ENTITY;
     private static class AudioBuffer {
         String target;
         int sampleRate;
@@ -434,7 +441,7 @@ public class Mcapibridge implements ModInitializer {
                 packFloat(data, 8, (float)loc.x);
                 packFloat(data, 12, (float)loc.y);
                 packFloat(data, 16, (float)loc.z);
-                packFloat(data, 20, finalOffset); // ★ 使用补偿后的 Offset
+                packFloat(data, 20, finalOffset);
                 data[24] = (byte)(sound.loop ? 1 : 0);
 
                 data[25] = (byte)(dimLen >> 24); data[26] = (byte)(dimLen >> 16);
@@ -457,6 +464,12 @@ public class Mcapibridge implements ModInitializer {
         player.networkHandler.sendPacket(ServerPlayNetworking.createS2CPacket(new AudioDataPayload("stop", id, 0, new byte[0])));
     }
 
+    public static void broadcastEvent(String eventData) {
+        for (BridgeClientHandler client : activeClients) {
+            client.eventQueue.add(eventData);
+        }
+    }
+
     @Override
     public void onInitialize() {
 
@@ -465,17 +478,30 @@ public class Mcapibridge implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(ScreenPayloads.OpenConfig.ID, ScreenPayloads.OpenConfig.CODEC);
         PayloadTypeRegistry.playC2S().register(ScreenPayloads.SetId.ID, ScreenPayloads.SetId.CODEC);
         PayloadTypeRegistry.playS2C().register(ScreenFramePayload.ID, ScreenFramePayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(IOPayloads.SetConfig.ID, IOPayloads.SetConfig.CODEC);
+        PayloadTypeRegistry.playS2C().register(IOPayloads.OpenConfig.ID, IOPayloads.OpenConfig.CODEC);
+
 
         Registry.register(Registries.BLOCK, new Identifier("mcapibridge", "screen"), SCREEN_BLOCK);
         Item screenItem = Registry.register(Registries.ITEM, new Identifier("mcapibridge", "screen"), new ScreenBlockItem(SCREEN_BLOCK, new Item.Settings()));
+
+        Registry.register(Registries.BLOCK, new Identifier("mcapibridge", "io"), IO_BLOCK);
+        Item ioItem=Registry.register(Registries.ITEM, new Identifier("mcapibridge", "io"), new IOBlockItem(IO_BLOCK, new Item.Settings()));
 
         SCREEN_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE,
                 new Identifier("mcapibridge", "screen_block_entity"),
                 FabricBlockEntityTypeBuilder.create(ScreenBlockEntity::new, SCREEN_BLOCK).build()
         );
+        IO_BLOCK_ENTITY =Registry.register(Registries.BLOCK_ENTITY_TYPE,
+                new Identifier("mcapibridge","io_block_entity"),
+                FabricBlockEntityTypeBuilder.create(IOBlockEntity::new, IO_BLOCK).build()
+        );
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(content -> {
             content.add(screenItem);
+        });
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.REDSTONE).register(content -> {
+            content.add(ioItem);
         });
 
 
@@ -636,6 +662,25 @@ public class Mcapibridge implements ModInitializer {
                             new AudioDataPayload("reset", "all", 0, new byte[0])
                     )
             );
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(IOPayloads.SetConfig.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            BlockPos pos = payload.pos();
+            int newId = payload.newId();
+            boolean newMode = payload.newMode();
+
+            context.server().execute(() -> {
+                if (player.squaredDistanceTo(pos.toCenterPos()) > 64.0) return;
+
+                ServerWorld world = (ServerWorld) player.getWorld();
+                BlockState state = world.getBlockState(pos);
+
+                if (state.getBlock() instanceof IOBlock ioBlock) {
+                    ioBlock.configure(world, pos, newId, newMode);
+                    player.sendMessage(Text.translatable("mcapibridge.msg.io.success",newId), true);
+                }
+            });
         });
 
 /*
@@ -815,6 +860,8 @@ public class Mcapibridge implements ModInitializer {
                     case "audio.reset": return audioReset(args);
                     case "audio.playScreen": return audioPlayScreen(args);
                     case "audio.syncProgress": return audioSyncProgress(args);
+                    case "io.write": return ioWrite(args);
+                    case "io.read": return ioRead(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
@@ -1938,6 +1985,58 @@ public class Mcapibridge implements ModInitializer {
                 // System.out.println("Synced progress for " + id + ": " + progress + "s");
             }
             return null;
+        }
+
+        private String ioWrite(String[] args) {
+            try {
+                int id = Integer.parseInt(args[0]);
+                int power = Integer.parseInt(args[1]);
+
+                mcServer.execute(() -> {
+                    IODataState state = IODataState.getServerState(mcServer);
+                    List<GlobalPos> list = state.getBlocks(id);
+
+                    for (GlobalPos gp : list) {
+                        ServerWorld world = mcServer.getWorld(gp.dimension());
+                        if (world != null) {
+                            BlockPos pos = gp.pos();
+                            if (world.getBlockEntity(pos) instanceof IOBlockEntity be) {
+                                if (!be.isOutputMode) {
+                                    be.power = Math.max(0, Math.min(15, power));
+                                    be.markDirty();
+                                    world.updateNeighborsAlways(pos, be.getCachedState().getBlock());
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (Exception e) {}
+            return null;
+        }
+
+        private String ioRead(String[] args) {
+            try {
+                int id = Integer.parseInt(args[0]);
+                return CompletableFuture.supplyAsync(() -> {
+                    IODataState state = IODataState.getServerState(mcServer);
+                    List<GlobalPos> list = state.getBlocks(id);
+
+                    int maxPower = 0;
+                    for (GlobalPos gp : list) {
+                        ServerWorld world = mcServer.getWorld(gp.dimension());
+                        if (world != null) {
+                            BlockPos pos = gp.pos();
+                            if (world.getBlockEntity(pos) instanceof IOBlockEntity be) {
+                                if (be.isOutputMode) {
+                                    maxPower = Math.max(maxPower, be.power);
+                                }
+                            }
+                        }
+                    }
+                    return String.valueOf(maxPower);
+                }, mcServer).join();
+
+            } catch (Exception e) { return "-1"; }
         }
 
     }

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: mcapibridge
-Version: 0.3.2
+Version: 0.4.0
 Summary: Python libary for MCAPIBridge
 Author: TaotianZhufang
 License: MIT License
@@ -39,7 +39,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest libary.Now version is 0.3.2.**
+**Please ensure you are using the latest libary.Now version is 0.4.0.**
 
 Use pip to install this.
 ```
@@ -342,3 +342,31 @@ Represents a 3D vector/coordinate.
 Represents the location of a screen or audio source, including dimension information.
 *   **properties**: `x`, `y`, `z`, `dimension`.
 *   **Constructor**: `ScreenLocation(x, y, z, dimension="minecraft:overworld")`
+
+---
+
+### Class `IOManager`
+
+Provides interaction with the IO blocks (redstone control). All functions are accessed via `mc.io`.
+
+#### `IOManager.write(channel_id, value)`
+Send a signal to an IO block (Input Mode).
+*   **channel_id**: Int ID of the target IO channel.
+*   **value**: Can be an `int` (0-15) for analog signal strength, or `bool` (True=15, False=0) for digital signal.
+
+#### `IOManager.read(channel_id)`
+Read the current signal strength from an IO block (Output Mode).
+*   **channel_id**: Int ID of the target IO channel.
+*   **return**: Int signal strength (0-15).
+
+#### `IOManager.isHigh(channel_id, threshold=7)`
+Check if the signal on a channel is considered "High".
+*   **channel_id**: Int ID.
+*   **threshold**: Int threshold value (default 7).
+*   **return**: Bool True if signal > threshold.
+
+#### `IOManager.isLow(channel_id, threshold=7)`
+Check if the signal on a channel is considered "Low".
+*   **channel_id**: Int ID.
+*   **threshold**: Int threshold value (default 7).
+*   **return**: Bool True if signal <= threshold.

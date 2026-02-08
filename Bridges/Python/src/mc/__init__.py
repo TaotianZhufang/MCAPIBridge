@@ -1,4 +1,4 @@
-from .minecraft import Minecraft, Vec3, PlayerPos, BlockHit, ChatPost, AudioManager,ScreenLocation
+from .minecraft import Minecraft, Vec3, PlayerPos, BlockHit, ChatPost, AudioManager, ScreenLocation, IOManager
 
 __all__ = [
     "Minecraft",
@@ -8,4 +8,5 @@ __all__ = [
     "ChatPost",
     "AudioManager",
     "ScreenLocation",
+    "IOManager",
 ]

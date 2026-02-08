@@ -1,0 +1,6 @@
+﻿{
+  "variants": {
+    "output_mode=false": { "model": "mcapibridge:block/io_input" },
+    "output_mode=true":  { "model": "mcapibridge:block/io_output" }
+  }
+}

@@ -21,5 +21,20 @@
 
   "mcapibridge.msg.config.success": "§a屏幕配置成功！尺寸: §a%d§ax%d§a ID: %d",
   "mcapibridge.msg.config.error.shape": "§c配置失败：形状不规则 (检测到 §c%d§c，需要 §c%d)",
-  "mcapibridge.options.audioSync": "音频同步延迟"
+  "mcapibridge.options.audioSync": "音频同步延迟",
+
+  "block.mcapibridge.io": "IO 端口",
+  "block.mcapibridge.io.desc": "连接红石信号与外部脚本。",
+
+  "mcapibridge.gui.io.title": "IO 配置",
+  "mcapibridge.gui.io.label.id": "通道 ID:",
+  "mcapibridge.gui.io.label.mode": "模式:",
+  "mcapibridge.gui.io.mode.output": "输出 (MC -> Bridges)",
+  "mcapibridge.gui.io.mode.input": "输入 (Bridges -> MC)",
+  "mcapibridge.gui.io.button.save": "保存",
+  "mcapibridge.gui.io.error.nan": "ID 必须为数字",
+
+  "mcapibridge.msg.io.success": "§aIO 配置成功: ID %d",
+  "mcapibridge.msg.io.switch": "IO 模式切换: %s §7(ID: %d)",
+  "mcapibridge.msg.io.info": "§e当前 IO ID: §f%d  "
 }

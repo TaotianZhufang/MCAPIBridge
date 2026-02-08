@@ -1,0 +1,16 @@
+﻿{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IRI",
+    "SSS"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "R": { "item": "minecraft:redstone" },
+    "S": { "tag": "minecraft:base_stone_overworld" }
+  },
+  "result": {
+    "id": "mcapibridge:io",
+    "count": 4
+  }
+}

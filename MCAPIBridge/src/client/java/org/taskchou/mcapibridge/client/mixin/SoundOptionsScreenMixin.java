@@ -41,7 +41,7 @@ public abstract class SoundOptionsScreenMixin extends Screen {
                         "mcapibridge.options.audioSync",
                         SimpleOption.emptyTooltip(),
                         (text, value) -> {
-                            double offset = (value - 0.5) * 10.0; // 映射到 -5 ~ +5
+                            double offset = (value - 0.5) * 10.0;
                             String sign = offset > 0 ? "+" : "";
                             return Text.literal(String.format("%s: %s%.2fs", text.getString(), sign, offset));
                         },

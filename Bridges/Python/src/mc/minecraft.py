@@ -5,6 +5,32 @@ import base64
 import wave
 import struct
 
+class IOManager:
+    def __init__(self, mc):
+        self.mc = mc
+        
+    def write(self, channel_id, value):
+        power = 0
+        if isinstance(value, bool):
+            power = 15 if value else 0
+        elif isinstance(value, int):
+            power = max(0, min(15, value))
+            
+        self.mc._send(f"io.write({channel_id},{power})")
+
+    def read(self, channel_id):
+        self.mc._send(f"io.read({channel_id})")
+        try:
+            return int(self.mc._recv())
+        except:
+            return 0
+
+    def isHigh(self, channel_id, threshold=7):
+        return self.read(channel_id) > threshold
+
+    def isLow(self, channel_id, threshold=7):
+        return self.read(channel_id) <= threshold
+
 class ScreenLocation:
     def __init__(self, x, y, z, dimension="minecraft:overworld"):
         self.x = x
@@ -40,7 +66,7 @@ class AudioManager:
         
         b64_data = base64.b64encode(frames).decode('ascii').replace('\n', '')
         if "\n" in b64_data:
-            print("⚠️ 警告：Base64 含\\n！")
+            print("⚠Base64 includes \\n！")
         
         chunk_size = 40000  
         for i in range(0, len(b64_data), chunk_size):
@@ -173,6 +199,7 @@ class Minecraft:
         self.connected = False
         self._connect()
         self.audio = AudioManager(self)
+        self.io = IOManager(self)
 
     def _connect(self):
         try:

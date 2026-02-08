@@ -65,6 +65,17 @@
     I I I   (Iron Ingot)
     ```
 
+### ⚡ Physical IO System
+*   **IO Port Block**: A specialized block `mcapibridge:io` that bridges Minecraft Redstone with external hardware/scripts.
+*   **Input Mode**: Scripts sends signals -> Block emits Redstone power (0-15).
+*   **Output Mode**: Block detects Redstone power -> Sends events to scripts.
+*   **Real-time Interaction**: Perfect for controlling smart home devices from Minecraft or visualizing sensor data in-game.
+*   **Crafting Recipe**:
+    ```
+    I R I   (Iron Ingot, Redstone, Iron Ingot)
+    S S S   (Stone)
+    ```
+
 ### 📦 Deep Data Access (NBT)
 *   **NBT Modification**: Directly write raw NBT data to **Entities** and **Block Entities**.
 *   **Advanced Customization**: Create giants, freeze mobs (`NoAI`), make entities glow, or fill chests with custom loot using JSON-like NBT strings.
@@ -97,6 +108,13 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 ---
 
 ## 📋 Update Log
+
+#### 2/9/2026 Alpha-0.5.0
+*   **Physical IO System**: Added `mcapibridge:io` block for bridging Redstone with external IO.
+    *   **Input Mode**: Control in-game Redstone power from scripts.
+    *   **Output Mode**: Monitor in-game Redstone power changes in scripts.
+    *   **Interactive Config**: Right-click to open a GUI for setting Channel ID and Mode.
+    *   **Visual Feedback**: Block texture changes based on mode (Input/Output).
 
 #### 2/8/2026 Alpha-0.4.1
 *   **Audio & Video Dimension Support**: Implemented dimension-aware playback. Screens and 3D audio now correctly isolate between Overworld, Nether, and End.
