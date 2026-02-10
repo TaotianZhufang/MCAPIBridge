@@ -109,6 +109,9 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 📋 Update Log
 
+#### 2/10/2026 Alpha-0.5.1
+*   **IO Block Update**: Added `mc.io.config` method for dynamic reconfiguration of IO blocks via scripts.
+
 #### 2/9/2026 Alpha-0.5.0
 *   **Physical IO System**: Added `mcapibridge:io` block for bridging Redstone with external IO.
     *   **Input Mode**: Control in-game Redstone power from scripts.

@@ -7,7 +7,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric.This libary offers some wa
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest libary.Now version is 0.4.0.**
+**Please ensure you are using the latest libary.Now version is 0.4.1.**
 
 Use pip to install this.
 ```
@@ -338,3 +338,12 @@ Check if the signal on a channel is considered "Low".
 *   **channel_id**: Int ID.
 *   **threshold**: Int threshold value (default 7).
 *   **return**: Bool True if signal <= threshold.
+
+#### `IOManager.config(x, y, z, channel_id, mode, dimension="")`
+Reconfigure an existing IO Block (set ID and Mode).
+*   **x, y, z**: Int coordinates of the block.
+*   **channel_id**: Int new Channel ID.
+*   **mode**: String or Bool mode.
+    *   `"in"`, `"input"`, `False`: Input Mode (Python controls MC redstone).
+    *   `"out"`, `"output"`, `True`: Output Mode (MC redstone triggers Python).
+*   **dimension**: (Optional) String dimension or player ID. Defaults to empty string (follows player).

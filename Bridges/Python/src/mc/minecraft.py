@@ -31,6 +31,17 @@ class IOManager:
     def isLow(self, channel_id, threshold=7):
         return self.read(channel_id) <= threshold
 
+    def config(self, x, y, z, channel_id, mode, dimension=""):
+        mode_bool = "false"
+        if isinstance(mode, bool):
+            mode_bool = "true" if mode else "false"
+        elif isinstance(mode, str):
+            if mode.lower() in ["out", "output"]:
+                mode_bool = "true"
+            else:
+                mode_bool = "false"     
+        self.mc._send(f"io.config({x},{y},{z},{channel_id},{mode_bool},{dimension})")
+
 class ScreenLocation:
     def __init__(self, x, y, z, dimension="minecraft:overworld"):
         self.x = x

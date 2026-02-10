@@ -862,6 +862,7 @@ public class Mcapibridge implements ModInitializer {
                     case "audio.syncProgress": return audioSyncProgress(args);
                     case "io.write": return ioWrite(args);
                     case "io.read": return ioRead(args);
+                    case "io.config": return ioConfig(args);
                     default: return null;
                 }
             } catch (Exception e) { return "Error: " + e.getMessage(); }
@@ -2037,6 +2038,33 @@ public class Mcapibridge implements ModInitializer {
                 }, mcServer).join();
 
             } catch (Exception e) { return "-1"; }
+        }
+
+        private String ioConfig(String[] args) {
+            try {
+                final int x = Integer.parseInt(args[0]);
+                final int y = Integer.parseInt(args[1]);
+                final int z = Integer.parseInt(args[2]);
+                final int newId = Integer.parseInt(args[3]);
+                final boolean newMode = Boolean.parseBoolean(args[4]);
+
+                final ServerWorld world = resolveWorld(args, 5);
+
+                mcServer.execute(() -> {
+                    if (world == null) return;
+
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState state = world.getBlockState(pos);
+
+                    if (state.getBlock() instanceof IOBlock ioBlock) {
+                        ioBlock.configure(world, pos, newId, newMode);
+                    }
+                });
+
+            } catch (Exception e) {
+                return "Error: " + e.getMessage();
+            }
+            return null;
         }
 
     }
