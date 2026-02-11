@@ -103,11 +103,16 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 #### [Python Examples](https://github.com/TaotianZhufang/MCAPIBridge/tree/main/Bridges/Example/Python)
 
+#### [C# Library](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/CSharp/README.MD)
+
 *More languages will be supported in the future.*
 
 ---
 
 ## 📋 Update Log
+
+#### 2/11/2026
+*   **C#**:Added C# support.
 
 #### 2/10/2026 Alpha-0.5.1
 *   **IO Block Update**: Added `mc.io.config` method for dynamic reconfiguration of IO blocks via scripts.
