@@ -7,7 +7,7 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric. This library offers ways 
 ### Install
 Ensure your mod loaded.
 
-**Please ensure you are using the latest library. Now version is 0.1.0.**
+**Please ensure you are using the latest library. Now version is 0.1.1.**
 
 Use NuGet to install this.
 ```
@@ -615,7 +615,7 @@ class Program
 
 - **.NET Standard 2.0+** / **.NET 6.0+** / **.NET 8.0+**
 - **MCAPIBridge Mod** installed on Minecraft server
-- Minecraft **1.18.2 - 1.21.x** (Fabric)
+- Minecraft: See [Modrinth](https://modrinth.com/mod/mcapibridge)
 
 ---
 
