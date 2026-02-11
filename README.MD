@@ -1,6 +1,6 @@
 # MCAPIBridge
 
-**MCAPIBridge** is a powerful Fabric mod for **Minecraft 1.20.6** that establishes a real-time TCP socket connection between the game and external scripts (Python, etc.). It exposes a comprehensive API allowing programmatic control over the world, entities, and player states, acting as a programmable interface for Minecraft.
+**MCAPIBridge** is a powerful Fabric mod for Minecraft that establishes a real-time TCP socket connection between the game and external scripts (Python, etc.). It exposes a comprehensive API allowing programmatic control over the world, entities, and player states, acting as a programmable interface for Minecraft.
 
 *Inspired by the classic **[Minecraft Pi Protocol (MCPI)](https://github.com/martinohanlon/mcpi)** and the **[RaspberryJuice](https://github.com/zhuowei/RaspberryJuice)** plugin.*
 
