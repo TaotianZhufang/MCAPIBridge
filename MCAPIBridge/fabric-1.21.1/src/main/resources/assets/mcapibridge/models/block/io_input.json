@@ -1,0 +1,12 @@
+﻿{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "mcapibridge:block/io_side",
+    "up":       "mcapibridge:block/io_top_in",
+    "down":     "mcapibridge:block/io_bottom",
+    "north":    "mcapibridge:block/io_side",
+    "south":    "mcapibridge:block/io_side",
+    "east":     "mcapibridge:block/io_side",
+    "west":     "mcapibridge:block/io_side"
+  }
+}

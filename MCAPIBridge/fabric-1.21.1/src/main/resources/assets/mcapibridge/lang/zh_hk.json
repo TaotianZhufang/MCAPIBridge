@@ -1,0 +1,40 @@
+﻿{
+  "block.mcapibridge.screen": "自訂螢幕",
+  "block.mcapibridge.screen.desc": "可透過腳本控制顯示圖片或影片。",
+  "mcapibridge.options.customAudioVolume": "MCAPIBridge 音量",
+  "category.mcapibridge": "MCAPIBridge",
+  "key.mcapibridge.macro1": "自訂巨集按鍵 1",
+  "key.mcapibridge.macro2": "自訂巨集按鍵 2",
+  "key.mcapibridge.macro3": "自訂巨集按鍵 3",
+  "key.mcapibridge.macro4": "自訂巨集按鍵 4",
+  "key.mcapibridge.macro5": "自訂巨集按鍵 5",
+
+  "mcapibridge.gui.title": "螢幕配置",
+  "mcapibridge.gui.label.id": "設定 ID (數字):",
+  "mcapibridge.gui.input.id": "螢幕 ID",
+  "mcapibridge.gui.button.save": "儲存並套用",
+  "mcapibridge.gui.error.nan": "ID 必須為數字",
+
+  "mcapibridge.msg.welcome.1":"§b歡迎來到 MCAPIBridge !",
+  "mcapibridge.msg.welcome.2":"使用橋接語言(如Python)來控制遊戲",
+  "mcapibridge.msg.welcome.3":"§a連接到伺服器IP，端口為4711",
+
+  "mcapibridge.msg.config.success": "§a螢幕配置成功！尺寸: §a%d§ax%d§a ID: %d",
+  "mcapibridge.msg.config.error.shape": "§c配置失敗：形狀不規則 (偵測到 §c%d§c，需要 §c%d)",
+  "mcapibridge.options.audioSync": "音訊同步延遲",
+
+  "block.mcapibridge.io": "IO 端口",
+  "block.mcapibridge.io.desc": "連接紅石訊號与外部腳本。",
+
+  "mcapibridge.gui.io.title": "IO 配置",
+  "mcapibridge.gui.io.label.id": "頻道 ID:",
+  "mcapibridge.gui.io.label.mode": "模式:",
+  "mcapibridge.gui.io.mode.output": "輸出 (MC -> Bridges)",
+  "mcapibridge.gui.io.mode.input": "輸入 (Bridges -> MC)",
+  "mcapibridge.gui.io.button.save": "儲存",
+  "mcapibridge.gui.io.error.nan": "ID 必須為數字",
+
+  "mcapibridge.msg.io.success": "§aIO 配置成功: ID %d",
+  "mcapibridge.msg.io.switch": "IO 模式切換: %s §7(ID: %d)",
+  "mcapibridge.msg.io.info": "§e目前 IO ID: §f%d  "
+}

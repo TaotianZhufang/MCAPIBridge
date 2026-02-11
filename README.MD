@@ -84,9 +84,9 @@
 
 ## 📦 Requirements
 
-*   **Minecraft Version**: 1.20.6
+*   **Minecraft Version**: 1.20.6,1.21.1
 *   **Mod Loader**: Fabric Loader
-*   **Dependencies**: Fabric API 0.100.8
+*   **Dependencies**: Latest Fabric API
 
 ## Install
 #### [Modrinth](https://modrinth.com/mod/mcapibridge)
@@ -112,7 +112,8 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 ## 📋 Update Log
 
 #### 2/11/2026
-*   **C#**:Added C# support.
+*   **C#**: Added C# support.
+*   **1.21.1**: Added 1.21.1 support.
 
 #### 2/10/2026 Alpha-0.5.1
 *   **IO Block Update**: Added `mc.io.config` method for dynamic reconfiguration of IO blocks via scripts.
