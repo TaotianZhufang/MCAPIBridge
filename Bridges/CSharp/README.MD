@@ -361,13 +361,6 @@ Play audio with 3D spatial positioning.
 *   **dimension**: Optional String dimension ID. Default empty.
 *   **offset**: Float start offset in seconds. Default 0.0f.
 
-##### `AudioManager.PlayAt(audioId, x, y, z, radius, volume)`
-Play audio at position (simplified 3D).
-*   **audioId**: String ID of loaded audio.
-*   **x, y, z**: Double world coordinates.
-*   **radius**: Double hearing radius. Default 32.
-*   **volume**: Float volume. Default 1.0f.
-
 ##### `AudioManager.PlayOnScreen(audioId, screenId, volume, loop)`
 Play audio bound to a screen block.
 *   **audioId**: String ID of loaded audio.
