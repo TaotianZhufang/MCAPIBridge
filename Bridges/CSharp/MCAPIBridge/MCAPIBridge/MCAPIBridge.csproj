@@ -6,7 +6,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     
     <PackageId>MCAPIBridge</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.1.3</Version>
     <Authors>TaotianZhufang</Authors>
     <Description>C# library for MCAPIBridge - Control Minecraft from external programs</Description>
     <PackageTags>minecraft;api;bridge;modding</PackageTags>

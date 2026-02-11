@@ -11,17 +11,15 @@ namespace MCAPIBridge
     public class MinecraftClient : IDisposable
     {
         private TcpClient _client;
+        private NetworkStream _stream;
         private StreamReader _reader;
-        private StreamWriter _writer;
+        // private StreamWriter _writer;
         private bool _connected;
 
         public string Host { get; private set; }
         public int Port { get; private set; }
 
-        /// <summary>Audio Manager</summary>
         public AudioManager Audio { get; private set; }
-
-        /// <summary>IO Manager</summary>
         public IOManager IO { get; private set; }
 
         public MinecraftClient(string host = "localhost", int port = 4711)
@@ -30,33 +28,34 @@ namespace MCAPIBridge
             Port = port;
             Audio = new AudioManager(this);
             IO = new IOManager(this);
-            Connect();
+
+            if (!Connect())
+            {
+                throw new Exception(string.Format("Can't connect Minecraft: ({0}:{1})", Host, Port));
+            }
         }
 
         private bool Connect()
         {
             try
             {
-                if (_client != null)
-                {
-                    _client.Close();
-                }
+                if (_client != null) _client.Close();
 
                 _client = new TcpClient();
                 _client.Connect(Host, Port);
+
                 _client.ReceiveTimeout = 5000;
+                _client.SendTimeout = 5000;
 
-                var stream = _client.GetStream();
-                _reader = new StreamReader(stream, Encoding.UTF8);
-                _writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+                _stream = _client.GetStream();
+                _reader = new StreamReader(_stream, Encoding.UTF8);
+
                 _connected = true;
-
-                Console.WriteLine(string.Format("[MCAPI] Connected ({0}:{1}).", Host, Port));
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(string.Format("[MCAPI] Lost connection. Retry... ({0})", ex.Message));
+                Console.WriteLine("[MCAPI] Connection Error: " + ex.Message);
                 _connected = false;
                 return false;
             }
@@ -65,17 +64,29 @@ namespace MCAPIBridge
         internal void Send(string command)
         {
             if (!_connected && !Connect()) return;
+
             try
             {
-                _writer.WriteLine(command);
+                byte[] data = Encoding.UTF8.GetBytes(command + "\n");
+
+                _stream.Write(data, 0, data.Length);
+                _stream.Flush();
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine("[MCAPI] Send Error: " + ex.Message);
                 _connected = false;
+
+   
                 if (Connect())
                 {
-                    try { _writer.WriteLine(command); }
-                    catch { Console.WriteLine("[MCAPI] Retry failed."); }
+                    try
+                    {
+                        byte[] data = Encoding.UTF8.GetBytes(command + "\n");
+                        _stream.Write(data, 0, data.Length);
+                        _stream.Flush();
+                    }
+                    catch {  }
                 }
             }
         }
@@ -85,20 +96,11 @@ namespace MCAPIBridge
             if (!_connected) return null;
             try
             {
-                var line = _reader.ReadLine();
-                if (line == null)
-                {
-                    _connected = false;
-                    for (int i = 0; i < 3; i++)
-                    {
-                        Thread.Sleep(1000);
-                        if (Connect()) return Receive();
-                    }
-                }
-                return line != null ? line.Trim() : null;
+                return _reader.ReadLine()?.Trim();
             }
             catch
             {
+                _connected = false;
                 return null;
             }
         }
@@ -358,6 +360,31 @@ namespace MCAPIBridge
             return items;
         }
 
+        /// <summary>Get Player Details</summary>
+        public PlayerDetails GetPlayerDetails(string target = "")
+        {
+            Send(string.Format("player.getDetails({0})", target));
+            var data = Receive();
+
+            if (string.IsNullOrEmpty(data) || data.Contains("Error"))
+                return null;
+
+            var parts = data.Split(',');
+            // Name,ID,Mode,HP,MaxHP,Food,HeldItem,Count
+            if (parts.Length < 8) return null;
+
+            return new PlayerDetails(
+                parts[0],
+                int.Parse(parts[1]),
+                parts[2],
+                float.Parse(parts[3]),
+                float.Parse(parts[4]),
+                int.Parse(parts[5]),
+                parts[6],
+                int.Parse(parts[7])
+            );
+        }
+
         // ==================== Entity Info ====================
 
         /// <summary>Get Entities Nearby</summary>
@@ -543,7 +570,7 @@ namespace MCAPIBridge
         public void Dispose()
         {
             if (_reader != null) _reader.Dispose();
-            if (_writer != null) _writer.Dispose();
+            if (_stream != null) _stream.Dispose();
             if (_client != null) _client.Close();
         }
     }

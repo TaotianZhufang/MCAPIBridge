@@ -7,16 +7,24 @@
       "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\mcapibridge.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
-      "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\mcapibridge.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
       "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\mcapibridge.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\playerdetails.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\playerdetails.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\minecraftclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\minecraftclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\audiomanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\audiomanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\iomanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -25,10 +33,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\playerpos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\playerpos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\audiomanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|solutionrelative:mcapibridge\\audiomanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4FFE83C3-A8A4-4747-9134-26C9BB0EEF85}|MCAPIBridge\\MCAPIBridge.csproj|h:\\users\\taskchou\\source\\repos\\mcapibridge\\mcapibridge\\screenlocation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -54,7 +58,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 12,
+          "SelectedChildIndex": 13,
           "Children": [
             {
               "$type": "Bookmark",
@@ -66,20 +70,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
+              "Title": "PlayerDetails.cs",
+              "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\PlayerDetails.cs",
+              "RelativeDocumentMoniker": "MCAPIBridge\\PlayerDetails.cs",
+              "ToolTip": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\PlayerDetails.cs",
+              "RelativeToolTip": "MCAPIBridge\\PlayerDetails.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-11T11:37:48.146Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "README.MD",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\README.MD",
               "RelativeDocumentMoniker": "MCAPIBridge\\README.MD",
               "ToolTip": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\README.MD",
               "RelativeToolTip": "MCAPIBridge\\README.MD",
-              "ViewState": "AgIAAPwBAAAAAAAAAAAAAGkCAABBAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
               "WhenOpened": "2026-02-11T07:24:25.063Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "MCAPIBridge",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\MCAPIBridge.csproj",
               "RelativeDocumentMoniker": "MCAPIBridge\\MCAPIBridge.csproj",
@@ -91,19 +108,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 5,
               "Title": "AudioManager.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\AudioManager.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\AudioManager.cs",
               "ToolTip": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\AudioManager.cs",
               "RelativeToolTip": "MCAPIBridge\\AudioManager.cs",
-              "ViewState": "AgIAAGAAAAAAAAAAAAAAAAQAAAAWAAAAAAAAAA==",
+              "ViewState": "AgIAAFcAAAAAAAAAAAAAAAQAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T06:30:34.952Z"
+              "WhenOpened": "2026-02-11T06:30:34.952Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 11,
               "Title": "Vec3.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\Vec3.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\Vec3.cs",
@@ -115,7 +133,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 7,
               "Title": "PlayerPos.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\PlayerPos.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\PlayerPos.cs",
@@ -127,7 +145,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 10,
               "Title": "BlockHit.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\BlockHit.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\BlockHit.cs",
@@ -139,7 +157,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "ChatPost.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\ChatPost.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\ChatPost.cs",
@@ -151,7 +169,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "ScreenLocation.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\ScreenLocation.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\ScreenLocation.cs",
@@ -163,7 +181,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "IOManager.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\IOManager.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\IOManager.cs",
@@ -171,19 +189,21 @@
               "RelativeToolTip": "MCAPIBridge\\IOManager.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T05:57:53.895Z"
+              "WhenOpened": "2026-02-11T05:57:53.895Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "MinecraftClient.cs",
               "DocumentMoniker": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\MinecraftClient.cs",
               "RelativeDocumentMoniker": "MCAPIBridge\\MinecraftClient.cs",
               "ToolTip": "H:\\Users\\TaskChou\\source\\repos\\MCAPIBridge\\MCAPIBridge\\MinecraftClient.cs",
               "RelativeToolTip": "MCAPIBridge\\MinecraftClient.cs",
-              "ViewState": "AgIAACYBAAAAAAAAAAAqwDcBAAANAAAAAAAAAA==",
+              "ViewState": "AgIAAGcBAAAAAAAAAAAiwGwBAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T05:45:50.626Z"
+              "WhenOpened": "2026-02-11T05:45:50.626Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
