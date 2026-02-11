@@ -166,4 +166,4 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 🗺️ Roadmap
 
-*   **More Language Bridges**: C#, C/C++, Arduino for ESP32, Micropython for ESP32 libraries.
+*   **More Language Bridges**: Dart, Arduino for ESP32, Micropython for ESP32 libraries.
