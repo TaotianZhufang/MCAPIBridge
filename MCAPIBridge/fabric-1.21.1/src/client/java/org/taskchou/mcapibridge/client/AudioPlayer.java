@@ -199,26 +199,56 @@ public class AudioPlayer {
     }
 
     public static void play(String id, float volume, boolean loop, float offset) {
+
         AudioSource source = sources.get(id);
         if (source == null || source.sourceId == -1) return;
 
         source.baseVolume = volume;
         float finalVolume = volume * getVolumeMultiplier();
 
-        AL10.alSourcei(source.sourceId, AL10.AL_SOURCE_RELATIVE, AL10.AL_TRUE);
-        AL10.alSource3f(source.sourceId, AL10.AL_POSITION, 0, 0, 0);
         AL10.alSourcef(source.sourceId, AL10.AL_GAIN, finalVolume);
         AL10.alSourcei(source.sourceId, AL10.AL_LOOPING, loop && !source.streaming ? AL10.AL_TRUE : AL10.AL_FALSE);
 
-        AL10.alSourcePlay(source.sourceId);
-
-        if (offset > 0) {
-            int bytesPerSecond = source.sampleRate * 2;
-            int byteOffset = (int)(offset * bytesPerSecond);
-            if (byteOffset % 2 != 0) byteOffset--;
-            AL10.alSourcei(source.sourceId, 0x1026, byteOffset);
+        if (!source.is3D) {
+            AL10.alSourcei(source.sourceId, AL10.AL_SOURCE_RELATIVE, AL10.AL_TRUE);
+            AL10.alSource3f(source.sourceId, AL10.AL_POSITION, 0, 0, 0);
+        } else {
+            AL10.alSourcei(source.sourceId, AL10.AL_SOURCE_RELATIVE, AL10.AL_FALSE);
         }
 
+        int state = AL10.alGetSourcei(source.sourceId, AL10.AL_SOURCE_STATE);
+
+        //System.out.println("[Debug] Play ID: " + id + ", State: " + state + ", Offset: " + offset);
+
+        boolean hasEffectiveOffset = offset > 0.05f;
+
+        if (state == AL10.AL_PAUSED && !hasEffectiveOffset) {
+            AL10.alSourcePlay(source.sourceId);
+            source.playing = true;
+            return;
+        }
+
+        if (state == AL10.AL_PLAYING && !hasEffectiveOffset) {
+            source.playing = true;
+            return;
+        }
+
+        if (hasEffectiveOffset && (state == AL10.AL_PLAYING || state == AL10.AL_PAUSED)) {
+            AL10.alSourceStop(source.sourceId);
+        }
+
+        if (state != AL10.AL_INITIAL) {
+            AL10.alSourceRewind(source.sourceId);
+        }
+
+        if (hasEffectiveOffset) {
+            int bytesPerSecond = source.sampleRate * 2; // 16-bit mono
+            int byteOffset = (int)(offset * bytesPerSecond);
+            if (byteOffset % 2 != 0) byteOffset--;
+
+            AL10.alSourcei(source.sourceId, 0x1026, byteOffset); // 0x1026 = AL_BYTE_OFFSET
+        }
+        AL10.alSourcePlay(source.sourceId);
         source.playing = true;
     }
 

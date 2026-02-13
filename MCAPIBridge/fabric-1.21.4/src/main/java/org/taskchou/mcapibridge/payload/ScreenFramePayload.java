@@ -1,0 +1,32 @@
+package org.taskchou.mcapibridge.payload;
+
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.util.Identifier;
+
+public record ScreenFramePayload(int screenId, byte[] imageData, long timestamp) implements CustomPayload {
+    public static final CustomPayload.Id<ScreenFramePayload> ID =
+            new CustomPayload.Id<>(Identifier.of("mcapibridge", "screen_frame"));
+
+    public static final PacketCodec<RegistryByteBuf, ScreenFramePayload> CODEC = new PacketCodec<>() {
+        @Override
+        public ScreenFramePayload decode(RegistryByteBuf buf) {
+            int id = buf.readInt();
+            long ts = buf.readLong();
+            int len = buf.readInt();
+            byte[] data = new byte[len];
+            buf.readBytes(data);
+            return new ScreenFramePayload(id, data, ts);
+        }
+        @Override
+        public void encode(RegistryByteBuf buf, ScreenFramePayload payload) {
+            buf.writeInt(payload.screenId);
+            buf.writeLong(payload.timestamp);
+            buf.writeInt(payload.imageData.length);
+            buf.writeBytes(payload.imageData);
+        }
+    };
+    @Override
+    public Id<? extends CustomPayload> getId() { return ID; }
+}

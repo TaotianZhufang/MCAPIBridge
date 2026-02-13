@@ -1,0 +1,26 @@
+﻿{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "RDR",
+    "III"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "D": {
+      "item": "minecraft:glowstone_dust"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "mcapibridge:screen",
+    "count": 6
+  }
+}

@@ -113,6 +113,10 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 📋 Update Log
 
+#### 2/13/2026
+*   Add 1.21.4, 1.20.4, 1.20.1 support.
+*   Fix audio bugs. Now you can use audio.play to resume audio which pauses.
+
 #### 2/11/2026
 *   **C#**: Added C# support.
 *   **1.21.1**: Added 1.21.1 support.

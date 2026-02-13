@@ -7,7 +7,7 @@
   "key": {
     "I": { "item": "minecraft:iron_ingot" },
     "R": { "item": "minecraft:redstone" },
-    "S": { "tag": "minecraft:base_stone_overworld" }
+    "S": { "tag": "minecraft:stone_tool_materials" }
   },
   "result": {
     "id": "mcapibridge:io",

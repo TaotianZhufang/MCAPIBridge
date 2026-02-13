@@ -99,6 +99,8 @@ public class Mcapibridge implements ModInitializer {
         public float volume;
         public boolean loop;
         public boolean isGlobal;
+        public boolean isPaused = false;
+        public long pauseTime = 0;
 
         public float x, y, z;
         public String dimension;
@@ -214,6 +216,7 @@ public class Mcapibridge implements ModInitializer {
             Vec3d pPos = player.getPos();
 
             for (ActiveSound sound : activeSounds.values()) {
+                if (sound.isPaused) continue;
                 ScreenDataState.ScreenLocation bestLoc = null;
                 boolean shouldHear = false;
 
@@ -625,7 +628,7 @@ public class Mcapibridge implements ModInitializer {
                         var entry = it.next();
                         ActiveSound s = entry.getValue();
 
-                        if (!s.loop && s.duration > 0) {
+                        if (!s.loop && s.duration > 0 && !s.isPaused) {
                             if (now - s.startTime > (s.duration * 1000 + 5000)) {
                                 it.remove();
                                 // System.out.println("Auto-removed finished sound: " + s.id);
@@ -1713,10 +1716,31 @@ public class Mcapibridge implements ModInitializer {
                 duration = (float) len / (rate * 2.0f);
             }
 
+            if (activeSounds.containsKey(id)) {
+                ActiveSound existing = activeSounds.get(id);
+
+                if (existing.sourceDataId.equals(dataId)) {
+                    if (existing.isPaused) {
+                        long pausedDuration = System.currentTimeMillis() - existing.pauseTime;
+                        existing.startTime += pausedDuration;
+                        existing.isPaused = false;
+                    }
+
+                    existing.volume = volume;
+                    existing.loop = loop;
+                    existing.duration = duration;
+
+                    for (Set<String> listening : playerListeningState.values()) {
+                        listening.remove(id);
+                    }
+                    return null;
+                }
+            }
+
             ActiveSound sound = new ActiveSound(id, dataId, volume, loop, duration);
             activeSounds.put(id, sound);
 
-            for (Set<String> listening : Mcapibridge.playerListeningState.values()) {
+            for (Set<String> listening : playerListeningState.values()) {
                 listening.remove(id);
             }
 
@@ -1753,6 +1777,13 @@ public class Mcapibridge implements ModInitializer {
         private String audioPause(String[] args) {
             String target = args[0];
             String id = args[1];
+
+            ActiveSound s = activeSounds.get(id);
+            if (s != null) {
+                s.isPaused = true;
+                s.pauseTime = System.currentTimeMillis();
+            }
+
             sendAudioToTarget(target, "pause", id, 0, new byte[0], null);
             return null;
         }

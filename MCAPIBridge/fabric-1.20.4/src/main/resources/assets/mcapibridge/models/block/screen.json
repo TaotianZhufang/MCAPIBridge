@@ -1,0 +1,12 @@
+﻿{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "mcapibridge:block/screen_side",
+    "north": "mcapibridge:block/screen_front",
+    "south": "mcapibridge:block/screen_side",
+    "east": "mcapibridge:block/screen_side",
+    "west": "mcapibridge:block/screen_side",
+    "up": "mcapibridge:block/screen_side",
+    "down": "mcapibridge:block/screen_side"
+  }
+}
