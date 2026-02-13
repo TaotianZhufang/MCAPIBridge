@@ -82,12 +82,6 @@
 
 ---
 
-## 📦 Requirements
-
-*   **Minecraft Version**: 1.20.6,1.21.1
-*   **Mod Loader**: Fabric Loader
-*   **Dependencies**: Latest Fabric API
-
 ## Install
 #### [Modrinth](https://modrinth.com/mod/mcapibridge)
 
