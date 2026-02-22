@@ -1,3 +1,6 @@
+## 1.0.4
+- Added documentation comments to all public APIs.
+
 ## 1.0.3
 - Fixed repository URL.
 

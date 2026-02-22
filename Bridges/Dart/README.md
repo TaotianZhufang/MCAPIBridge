@@ -15,6 +15,20 @@ MCAPIBridge is a mod for Minecraft loaded with Fabric. This library offers ways 
 - 📡 **Event Polling**: Block hit events, chat message events
 - 🎯 **Entity Control**: Velocity, gravity, NBT modification
 
+## Platform Support
+
+| Platform | Supported |
+|----------|-----------|
+| Android  | ✅        |
+| iOS      | ✅        |
+| Linux    | ✅        |
+| macOS    | ✅        |
+| Windows  | ✅        |
+| Web      | ❌        |
+
+> Web is not supported because the library uses TCP sockets (`dart:io`), 
+> which are not available in web browsers.
+
 ## Getting Started
 
 ### Prerequisites
@@ -28,7 +42,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mcapibridge: ^1.0.3
+  mcapibridge: ^1.0.4
 ```
 
 Then run:

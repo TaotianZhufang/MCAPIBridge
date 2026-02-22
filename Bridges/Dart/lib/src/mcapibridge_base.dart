@@ -7,22 +7,46 @@ import 'dart:collection';
 
 // ========== Data Classes ==========
 
+/// Represents a 3D vector or coordinate.
 class Vec3 {
-  final double x, y, z;
+  /// X coordinate.
+  final double x;
+
+  /// Y coordinate.
+  final double y;
+
+  /// Z coordinate.
+  final double z;
+
+  /// Creates a new [Vec3] with the given coordinates.
   const Vec3(this.x, this.y, this.z);
 
+  /// Adds two vectors.
   Vec3 operator +(Vec3 o) => Vec3(x + o.x, y + o.y, z + o.z);
+
+  /// Subtracts two vectors.
   Vec3 operator -(Vec3 o) => Vec3(x - o.x, y - o.y, z - o.z);
+
+  /// Multiplies vector by a scalar.
   Vec3 operator *(double s) => Vec3(x * s, y * s, z * s);
+
+  /// Calculates dot product with another vector.
   double dot(Vec3 o) => x * o.x + y * o.y + z * o.z;
+
+  /// Returns the length (magnitude) of the vector.
   double length() => sqrt(x * x + y * y + z * z);
+
+  /// Returns the distance to another vector.
   double distanceTo(Vec3 o) => (this - o).length();
+
+  /// Returns a normalized (unit length) version of this vector.
   Vec3 normalized() {
     final l = length();
     if (l == 0) return Vec3(0, 0, 0);
     return Vec3(x / l, y / l, z / l);
   }
 
+  /// Converts to a Map representation.
   Map<String, double> toMap() => {'x': x, 'y': y, 'z': z};
 
   @override
@@ -37,10 +61,20 @@ class Vec3 {
   int get hashCode => Object.hash(x, y, z);
 }
 
+/// Represents player position with rotation angles.
+///
+/// Extends [Vec3] with [yaw] (horizontal rotation) and [pitch] (vertical rotation).
 class PlayerPos extends Vec3 {
-  final double yaw, pitch;
+  /// Horizontal rotation in degrees.
+  final double yaw;
+
+  /// Vertical rotation in degrees.
+  final double pitch;
+
+  /// Creates a new [PlayerPos].
   const PlayerPos(super.x, super.y, super.z, this.yaw, this.pitch);
 
+  /// Returns the normalized direction vector based on yaw and pitch.
   Vec3 get direction {
     final yawRad = yaw * pi / 180;
     final pitchRad = pitch * pi / 180;
@@ -51,6 +85,7 @@ class PlayerPos extends Vec3 {
     );
   }
 
+  /// Returns a position [distance] blocks ahead of the player's view.
   Vec3 forward(double distance) {
     final dir = direction;
     return Vec3(x + dir.x * distance, y + dir.y * distance, z + dir.z * distance);
@@ -63,11 +98,24 @@ class PlayerPos extends Vec3 {
       'pitch=${pitch.toStringAsFixed(1)})';
 }
 
+/// Represents a block hit event from player interaction.
 class BlockHit {
+  /// The position of the block that was hit.
   final Vec3 pos;
-  final int face, entityId, action;
+
+  /// The face of the block that was hit (0-5).
+  final int face;
+
+  /// The entity ID of the player who hit the block.
+  final int entityId;
+
+  /// The raw action code (1=left, 2=right, 101-105=key macros).
+  final int action;
+
+  /// The action type as a string ('LEFT_CLICK', 'RIGHT_CLICK', 'KEY_MACRO_N').
   final String type;
 
+  /// Creates a new [BlockHit] event.
   BlockHit(int x, int y, int z, this.face, this.entityId, this.action)
       : pos = Vec3(x.toDouble(), y.toDouble(), z.toDouble()),
         type = _actionToType(action);
@@ -90,17 +138,36 @@ class BlockHit {
       '$type player=$entityId)';
 }
 
+/// Represents a chat message posted by a player.
 class ChatPost {
-  final String name, message;
+  /// The name of the player who sent the message.
+  final String name;
+
+  /// The message content.
+  final String message;
+
+  /// Creates a new [ChatPost].
   const ChatPost(this.name, this.message);
 
   @override
   String toString() => '[$name]: $message';
 }
 
+/// Represents the location of a screen block with dimension info.
 class ScreenLocation {
-  final double x, y, z;
+  /// X coordinate.
+  final double x;
+
+  /// Y coordinate.
+  final double y;
+
+  /// Z coordinate.
+  final double z;
+
+  /// The dimension ID (e.g., 'minecraft:overworld').
   final String dimension;
+
+  /// Creates a new [ScreenLocation].
   const ScreenLocation(this.x, this.y, this.z,
       [this.dimension = 'minecraft:overworld']);
 
@@ -112,8 +179,12 @@ class ScreenLocation {
 
 // ========== Connection Exception ==========
 
+/// Exception thrown when connection to Minecraft server fails.
 class MCConnectionException implements Exception {
+  /// The error message.
   final String message;
+
+  /// Creates a new [MCConnectionException].
   MCConnectionException(this.message);
 
   @override
@@ -122,10 +193,17 @@ class MCConnectionException implements Exception {
 
 // ========== IO Manager ==========
 
+/// Manages IO block (redstone signal) operations.
+///
+/// Access via [Minecraft.io].
 class IOManager {
   final Minecraft _mc;
   IOManager._(this._mc);
 
+  /// Writes a signal value to an IO channel.
+  ///
+  /// [channelId] is the IO channel ID.
+  /// [value] can be a [bool] (true=15, false=0) or [int] (0-15).
   Future<void> write(int channelId, dynamic value) async {
     int power;
     if (value is bool) {
@@ -138,18 +216,32 @@ class IOManager {
     _mc._send('io.write($channelId,$power)');
   }
 
+  /// Reads the current signal strength from an IO channel.
+  ///
+  /// Returns a value between 0-15.
   Future<int> read(int channelId) async {
     return int.tryParse(await _mc._sendAndRecv('io.read($channelId)')) ?? 0;
   }
 
+  /// Checks if the signal on a channel is high (above threshold).
+  ///
+  /// Default [threshold] is 7.
   Future<bool> isHigh(int channelId, {int threshold = 7}) async {
     return (await read(channelId)) > threshold;
   }
 
+  /// Checks if the signal on a channel is low (at or below threshold).
+  ///
+  /// Default [threshold] is 7.
   Future<bool> isLow(int channelId, {int threshold = 7}) async {
     return (await read(channelId)) <= threshold;
   }
 
+  /// Configures an IO block at the specified position.
+  ///
+  /// [mode] can be:
+  /// - [bool]: true = output, false = input
+  /// - [String]: 'out'/'output' = output, 'in'/'input' = input
   Future<void> config(int x, int y, int z, int channelId, dynamic mode,
       [String dimension = '']) async {
     String modeBool;
@@ -157,8 +249,7 @@ class IOManager {
       modeBool = mode ? 'true' : 'false';
     } else if (mode is String) {
       final lower = mode.toLowerCase();
-      modeBool =
-          (lower == 'out' || lower == 'output') ? 'true' : 'false';
+      modeBool = (lower == 'out' || lower == 'output') ? 'true' : 'false';
     } else {
       modeBool = 'false';
     }
@@ -168,10 +259,16 @@ class IOManager {
 
 // ========== Audio Manager ==========
 
+/// Manages audio playback for players.
+///
+/// Access via [Minecraft.audio].
 class AudioManager {
   final Minecraft _mc;
   AudioManager._(this._mc);
 
+  /// Loads a WAV file and sends it to the target player(s).
+  ///
+  /// Automatically converts stereo to mono and 8-bit to 16-bit.
   Future<void> loadWav(String target, String audioId, String filepath) async {
     final file = File(filepath);
     if (!await file.exists()) {
@@ -244,11 +341,19 @@ class AudioManager {
     print('[Audio] Loaded $filepath: ${frames.length} bytes, ${sampleRate}Hz');
   }
 
+  /// Loads raw PCM data (16-bit signed mono).
+  ///
+  /// [sampleRate] defaults to 44100.
   Future<void> loadRaw(String target, String audioId, Uint8List pcmData,
       {int sampleRate = 44100}) async {
     await _uploadPcm(target, audioId, sampleRate, pcmData);
   }
 
+  /// Generates and loads a sine wave tone.
+  ///
+  /// [frequency] in Hz (default 440).
+  /// [duration] in seconds (default 1.0).
+  /// [volume] from 0.0 to 1.0 (default 1.0).
   Future<void> generateTone(String target, String audioId, {
     double frequency = 440,
     double duration = 1.0,
@@ -288,12 +393,20 @@ class AudioManager {
     _mc._send('audio.finishLoad($target,$audioId)');
   }
 
+  /// Plays audio in 2D (non-positional).
+  ///
+  /// [volume] from 0.0 to 1.0.
+  /// [loop] whether to loop the audio.
   void play(String target, String audioId,
       {double volume = 1.0, bool loop = false}) {
     _mc._send(
         'audio.play($target,$audioId,$volume,${loop ? "true" : "false"})');
   }
 
+  /// Plays audio with 3D spatial positioning.
+  ///
+  /// [rolloff] controls volume falloff with distance.
+  /// [offset] is the starting position in seconds.
   void play3d(String target, String audioId, double x, double y, double z, {
     double volume = 1.0,
     double rolloff = 1.0,
@@ -305,52 +418,85 @@ class AudioManager {
         '${loop ? "true" : "false"},$dimension,$offset)');
   }
 
+  /// Pauses audio playback.
   void pause(String target, String audioId) =>
       _mc._send('audio.pause($target,$audioId)');
 
+  /// Stops audio playback.
   void stop(String target, String audioId) =>
       _mc._send('audio.stop($target,$audioId)');
 
+  /// Unloads audio from memory.
   void unload(String target, String audioId) =>
       _mc._send('audio.unload($target,$audioId)');
 
+  /// Sets the volume of playing audio.
   void setVolume(String target, String audioId, double volume) =>
       _mc._send('audio.volume($target,$audioId,$volume)');
 
+  /// Updates the 3D position of playing audio.
   void setPosition(String target, String audioId, double x, double y, double z) =>
       _mc._send('audio.position($target,$audioId,$x,$y,$z)');
 
+  /// Clones an audio instance for simultaneous playback.
   void clone(String target, String sourceId, String newId) =>
       _mc._send('audio.clone($target,$sourceId,$newId)');
 
+  /// Resets all audio for all players.
   void reset() => _mc._send('audio.reset(@a)');
 
-  void playAt(String audioId, double x, double y, double z,{double radius = 32, double volume = 1.0})
-      {_mc._send('audio.playAt($audioId,$x,$y,$z,$radius,$volume)');}
+  /// Plays audio at a world position, heard by players within radius.
+  ///
+  /// [radius] is the hearing distance (default 32).
+  /// [volume] from 0.0 to 1.0 (default 1.0).
+  void playAt(String audioId, double x, double y, double z,
+      {double radius = 32, double volume = 1.0}) {
+    _mc._send('audio.playAt($audioId,$x,$y,$z,$radius,$volume)');
+  }
 
+  /// Plays audio associated with a screen.
   void playOnScreen(String audioId, int screenId,
       {double volume = 1.0, bool loop = false}) {
     _mc._send('audio.playScreen(@a,$audioId,$screenId,$volume,'
         '${loop ? "true" : "false"})');
   }
 
+  /// Synchronizes audio playback progress.
+  ///
+  /// [progress] is the position in seconds.
   void syncProgress(String audioId, double progress) =>
       _mc._send('audio.syncProgress(@a,$audioId,$progress)');
 }
 
 // ========== Main Minecraft Class ==========
 
+/// Main class for communicating with the MCAPIBridge Minecraft mod.
+///
+/// Example:
+/// ```dart
+/// final mc = await Minecraft.connect(host: 'localhost', port: 4711);
+/// mc.postToChat('Hello from Dart!');
+/// await mc.disconnect();
+/// ```
 class Minecraft {
+  /// The server host address.
   final String host;
+
+  /// The server port.
   final int port;
 
   Socket? _socket;
   StreamSubscription? _subscription;
-  bool connected = false;
-  final Queue<Completer<String>> _responseQueue = Queue();
-  //String _buffer = '';
 
+  /// Whether the client is currently connected.
+  bool connected = false;
+
+  final Queue<Completer<String>> _responseQueue = Queue();
+
+  /// Audio manager for playing sounds.
   late final AudioManager audio;
+
+  /// IO manager for redstone signal control.
   late final IOManager io;
 
   Minecraft._internal(this.host, this.port) {
@@ -358,6 +504,13 @@ class Minecraft {
     io = IOManager._(this);
   }
 
+  /// Connects to a Minecraft server running the MCAPIBridge mod.
+  ///
+  /// [host] defaults to 'localhost'.
+  /// [port] defaults to 4711.
+  /// [timeout] defaults to 5 seconds.
+  ///
+  /// Throws [MCConnectionException] if connection fails.
   static Future<Minecraft> connect({
     String host = 'localhost',
     int port = 4711,
@@ -383,6 +536,7 @@ class Minecraft {
     }
   }
 
+  /// Reconnects to the server.
   Future<void> reconnect({Duration timeout = const Duration(seconds: 5)}) async {
     await disconnect();
     await _connectAsync(timeout);
@@ -440,7 +594,8 @@ class Minecraft {
     }
   }
 
-  Future<String> _sendAndRecv(String cmd, {Duration timeout = const Duration(seconds: 5)}) async {
+  Future<String> _sendAndRecv(String cmd,
+      {Duration timeout = const Duration(seconds: 5)}) async {
     _ensureConnected();
     final completer = Completer<String>();
     _responseQueue.addLast(completer);
@@ -462,8 +617,14 @@ class Minecraft {
 
   // ========== Chat ==========
 
+  /// Sends a message to the chat.
+  ///
+  /// Supports Minecraft color codes with `§`.
   void postToChat(String msg) => _send('chat.post($msg)');
 
+  /// Runs a server command.
+  ///
+  /// The leading `/` is optional and will be removed if present.
   void runCommand(String cmd) {
     if (cmd.startsWith('/')) cmd = cmd.substring(1);
     _send('server.runCommand($cmd)');
@@ -471,16 +632,25 @@ class Minecraft {
 
   // ========== World ==========
 
+  /// Sets a block at the specified position.
+  ///
+  /// [blockId] can be without 'minecraft:' prefix (e.g., 'stone').
   void setBlock(int x, int y, int z, String blockId, [String? dimension]) {
     final dimPart = dimension != null ? ',$dimension' : '';
     _send('world.setBlock($x,$y,$z,$blockId$dimPart)');
   }
 
+  /// Gets the block ID at the specified position.
+  ///
+  /// Returns a string like 'minecraft:stone'.
   Future<String> getBlock(int x, int y, int z, [String? dimension]) async {
     final dimPart = dimension != null ? ',$dimension' : '';
     return _sendAndRecv('world.getBlock($x,$y,$z$dimPart)');
   }
 
+  /// Spawns an entity at the specified position.
+  ///
+  /// Returns the entity ID, or -1 if failed.
   Future<int> spawnEntity(double x, double y, double z, String entityId, {
     double yaw = 0,
     double pitch = 0,
@@ -492,6 +662,11 @@ class Minecraft {
     return int.tryParse(resp) ?? -1;
   }
 
+  /// Spawns particles at the specified position.
+  ///
+  /// [count] is the number of particles.
+  /// [dx], [dy], [dz] are the diffusion ranges.
+  /// [speed] is the particle speed.
   void spawnParticle(double x, double y, double z, String particleId, {
     int count = 10,
     double dx = 0,
@@ -505,6 +680,9 @@ class Minecraft {
     _send('world.spawnParticle($cmd)');
   }
 
+  /// Gets entities within a radius of a position.
+  ///
+  /// Returns a list of maps with 'id', 'type', and 'pos' ([Vec3]).
   Future<List<Map<String, dynamic>>> getEntities(
       double x, double y, double z, double radius,
       [String? dimension]) async {
@@ -528,20 +706,27 @@ class Minecraft {
 
   // ========== Entity ==========
 
+  /// Sets the velocity of an entity.
   void setEntityVelocity(int entityId, double vx, double vy, double vz) =>
       _send('entity.setVelocity($entityId,$vx,$vy,$vz)');
 
+  /// Enables or disables gravity for an entity.
   void setEntityNoGravity(int entityId, {bool enable = true}) =>
       _send('entity.setNoGravity($entityId,${enable ? "true" : "false"})');
 
+  /// Teleports an entity to the specified position.
   void teleportEntity(int entityId, double x, double y, double z) =>
       _send('entity.teleport($entityId,$x,$y,$z)');
 
+  /// Sets NBT data on an entity.
   void setEntityNbt(int entityId, String nbtString) =>
       _send('entity.setNbt($entityId,$nbtString)');
 
   // ========== Player ==========
 
+  /// Gets the player's position and rotation.
+  ///
+  /// [target] is optional player name.
   Future<PlayerPos> getPlayerPos([String target = '']) async {
     final data = await _sendAndRecv('player.getPos($target)');
     if (data.isEmpty) return const PlayerPos(0, 0, 0, 0, 0);
@@ -558,11 +743,15 @@ class Minecraft {
     return const PlayerPos(0, 0, 0, 0, 0);
   }
 
+  /// Gets the player's normalized direction vector.
   Future<Vec3> getDirectionVector([String target = '']) async {
     final pos = await getPlayerPos(target);
     return pos.direction;
   }
 
+  /// Gets a list of all online players.
+  ///
+  /// Returns a list of maps with 'name' and 'id'.
   Future<List<Map<String, dynamic>>> getOnlinePlayers() async {
     final d = await _sendAndRecv('world.getPlayers()');
     if (d.isEmpty) return [];
@@ -575,6 +764,9 @@ class Minecraft {
     }).where((e) => e.isNotEmpty).toList();
   }
 
+  /// Gets detailed information about a player.
+  ///
+  /// Returns a map with name, id, mode, health, max_health, food, held_item, held_count.
   Future<Map<String, dynamic>?> getPlayerDetails([String target = '']) async {
     final d = await _sendAndRecv('player.getDetails($target)');
     if (d.isEmpty || d.contains('Error')) return null;
@@ -592,6 +784,7 @@ class Minecraft {
     };
   }
 
+  /// Gets the entity ID of a player by name.
   Future<int?> getPlayerEntityId(String name) async {
     final players = await getOnlinePlayers();
     for (final p in players) {
@@ -600,6 +793,7 @@ class Minecraft {
     return null;
   }
 
+  /// Gets the name of a player by entity ID.
   Future<String?> getPlayerName(int entityId) async {
     final players = await getOnlinePlayers();
     for (final p in players) {
@@ -608,6 +802,9 @@ class Minecraft {
     return null;
   }
 
+  /// Gets the player's inventory contents.
+  ///
+  /// Returns a list of maps with 'slot', 'id', 'count'.
   Future<List<Map<String, dynamic>>> getInventory([String target = '']) async {
     final d = await _sendAndRecv('player.getInventory($target)');
     if (d.isEmpty || d.contains('EMPTY') || d.contains('ERROR')) return [];
@@ -631,23 +828,36 @@ class Minecraft {
     }).where((e) => e.isNotEmpty).toList();
   }
 
+  /// Sets the player's health.
   void setHealth(String target, double amount) =>
       _send('player.setHealth($target,$amount)');
 
+  /// Sets the player's food level (0-20).
   void setFood(String target, int amount) =>
       _send('player.setFood($target,$amount)');
 
+  /// Gives an item to the player.
+  ///
+  /// [count] defaults to 1.
   void give(String target, String itemId, {int count = 1}) =>
-    _send('player.give($target,$itemId,$count)');
+      _send('player.give($target,$itemId,$count)');
 
+  /// Clears the player's inventory.
+  ///
+  /// If [itemId] is specified, only clears that item.
   void clearInventory(String target, [String itemId = '']) =>
       _send('player.clear($target,$itemId)');
 
+  /// Applies a potion effect to the player.
+  ///
+  /// [durationSec] is the duration in seconds (default 30).
+  /// [amplifier] is the effect level (default 1).
   void giveEffect(String target, String effectName,
       {int durationSec = 30, int amplifier = 1}) {
     _send('player.effect($target,$effectName,$durationSec,$amplifier)');
   }
 
+  /// Teleports the player to the specified position.
   void teleport(double x, double y, double z, [String target = '']) {
     if (target.isNotEmpty) {
       _send('player.teleport($target,$x,$y,$z)');
@@ -656,26 +866,38 @@ class Minecraft {
     }
   }
 
+  /// Enables or disables flight for the player.
   void setFlying(String target,
       {bool allowFlight = true, bool isFlying = true}) {
     _send('player.setFlying($target,${allowFlight ? "true" : "false"},'
         '${isFlying ? "true" : "false"})');
   }
 
+  /// Sets the player's flight speed.
+  ///
+  /// Default Minecraft value is 0.05.
   void setFlySpeed(String target, {double speed = 0.05}) =>
       _send('player.setSpeed($target,true,$speed)');
 
+  /// Sets the player's walk speed.
+  ///
+  /// Default Minecraft value is 0.1.
   void setWalkSpeed(String target, {double speed = 0.1}) =>
       _send('player.setSpeed($target,false,$speed)');
 
+  /// Enables or disables god mode (invulnerability) for the player.
   void setGodMode(String target, {bool enable = true}) =>
       _send('player.setGod($target,${enable ? "true" : "false"})');
 
+  /// Forces the player to look at the specified position.
   void lookAt(String target, double x, double y, double z) =>
       _send('player.lookAt($target,$x,$y,$z)');
 
   // ========== Events ==========
 
+  /// Polls for block hit events.
+  ///
+  /// Returns a list of [BlockHit] events since the last poll.
   Future<List<BlockHit>> pollBlockHits() async {
     final d = await _sendAndRecv('events.block.hits()');
     if (d.isEmpty) return [];
@@ -695,6 +917,9 @@ class Minecraft {
     }).whereType<BlockHit>().toList();
   }
 
+  /// Polls for chat message events.
+  ///
+  /// Returns a list of [ChatPost] events since the last poll.
   Future<List<ChatPost>> pollChatPosts() async {
     final data = await _sendAndRecv('events.chat.posts()');
     if (data.isEmpty) return [];
@@ -709,6 +934,7 @@ class Minecraft {
 
   // ========== Block NBT ==========
 
+  /// Sets NBT data on a block entity.
   void setBlockNbt(int x, int y, int z, String nbtString,
       [String? dimension]) {
     final dimPart = dimension != null ? ',$dimension' : '';
@@ -717,6 +943,9 @@ class Minecraft {
 
   // ========== Sign ==========
 
+  /// Sets text on a sign block.
+  ///
+  /// The block at the position must already be a sign.
   void setSign(int x, int y, int z, {
     String l1 = '',
     String l2 = '',
@@ -732,11 +961,15 @@ class Minecraft {
 
   // ========== Screen ==========
 
+  /// Updates the content of a screen block.
+  ///
+  /// [base64Data] should be a Base64-encoded image (JPG/PNG).
   void updateScreen(int screenId, String base64Data,
       [String target = '@a']) {
     _send('screen.update($target,$screenId,$base64Data)');
   }
 
+  /// Gets the world locations of all screen blocks with the specified ID.
   Future<List<ScreenLocation>> getScreenLocations(int screenId) async {
     final resp = await _sendAndRecv('screen.getPos($screenId)');
     if (resp.isEmpty || resp.contains('ERROR')) return [];
@@ -765,11 +998,15 @@ class Minecraft {
     }
   }
 
+  /// Registers a screen location for audio positioning.
   void registerScreen(int screenId, double x, double y, double z,
       [String dimension = '']) {
     _send('screen.register($screenId,$x,$y,$z,$dimension)');
   }
 
+  /// Creates a screen wall and registers it.
+  ///
+  /// [axis] is 'x' (East-West) or 'z' (North-South).
   void createScreenWall(
     int startX,
     int startY,
@@ -820,10 +1057,12 @@ class Minecraft {
 
   // ========== Utility ==========
 
+  /// Delays execution for the specified milliseconds.
   Future<void> delay(int ms) => Future.delayed(Duration(milliseconds: ms));
 
   // ========== Disconnect ==========
 
+  /// Disconnects from the server.
   Future<void> disconnect() async {
     _failAllPending('Disconnecting');
     try {
