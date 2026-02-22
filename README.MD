@@ -101,7 +101,7 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 #### [C# Examples](https://github.com/TaotianZhufang/MCAPIBridge/tree/main/Bridges/Example/CSharp/README.MD)
 
-#### [Dart Library](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Dart/README.MD)
+#### [Dart Library](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Dart/README.md)
 
 *More languages will be supported in the future.*
 
