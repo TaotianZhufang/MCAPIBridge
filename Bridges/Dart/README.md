@@ -28,7 +28,7 @@ Add this to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mcapibridge: ^1.0.2
+  mcapibridge: ^1.0.3
 ```
 
 Then run:

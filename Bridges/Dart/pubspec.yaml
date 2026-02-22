@@ -1,6 +1,6 @@
 name: mcapibridge
 description: A Dart library for controlling Minecraft via MCAPIBridge mod.
-version: 1.0.2
+version: 1.0.3
 repository: https://github.com/TaotianZhufang/MCAPIBridge/tree/main/Bridges/Dart
 
 environment:
