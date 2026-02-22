@@ -1,0 +1,11 @@
+## 1.0.2
+- Add methods.
+
+## 1.0.1
+
+- Fixed README formatting issues.
+- Delete useless methods.
+
+## 1.0.0
+
+- Initial version.

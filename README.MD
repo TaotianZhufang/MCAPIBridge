@@ -101,6 +101,8 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 #### [C# Examples](https://github.com/TaotianZhufang/MCAPIBridge/tree/main/Bridges/Example/CSharp/README.MD)
 
+#### [Dart Library](https://github.com/TaotianZhufang/MCAPIBridge/blob/main/Bridges/Dart/README.MD)
+
 *More languages will be supported in the future.*
 
 ---
@@ -167,4 +169,4 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 🗺️ Roadmap
 
-*   **More Language Bridges**: Dart, Arduino for ESP32, Micropython for ESP32 libraries.
+*   **More Language Bridges**: Arduino for ESP32, Micropython for ESP32 libraries.
