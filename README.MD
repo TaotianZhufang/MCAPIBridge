@@ -111,6 +111,9 @@ This mod opens **Port 4711** and grants **Full Administrative (OP) Permissions**
 
 ## 📋 Update Log
 
+#### 2/24/2026
+*   Add Dart support
+
 #### 2/13/2026
 *   Add 1.21.4, 1.20.4, 1.20.1 support.
 *   Fix audio bugs. Now you can use audio.play to resume audio which pauses.
